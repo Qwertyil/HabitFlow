@@ -11,8 +11,8 @@
             <p>Используйте email и пароль.</p>
         </div>
 
-        {% if error_message %}
-        <div class="alert alert-error">
+        {% if error_message and error_message|trim %}
+        <div class="alert alert-error" data-auth-server-error>
             <i class="fas fa-exclamation-circle"></i>
             <span>{{ error_message }}</span>
         </div>
@@ -23,7 +23,7 @@
             <span data-auth-client-error-text></span>
         </div>
 
-        <form method="post" action="/auth/login" class="auth-form" autocomplete="on">
+        <form method="post" action="/auth/login" class="auth-form" autocomplete="on" novalidate>
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="next" value="{{ next_url }}">
 

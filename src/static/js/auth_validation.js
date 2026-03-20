@@ -7,66 +7,113 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        function messageForField(field) {
-            const validity = field.validity;
+        const authCard = form.closest('.auth-card');
+        const serverErrorBox = authCard?.querySelector('[data-auth-server-error]');
 
-            if (validity.valueMissing) {
-                return field.name === 'email' ? 'Введите email.' : 'Введите пароль.';
-            }
-
-            if (field.name === 'email' && validity.typeMismatch) {
-                return 'Введите корректный email.';
-            }
-
-            if (field.name === 'password' && (validity.tooShort || validity.tooLong)) {
-                return 'Пароль должен быть длиной от 8 до 256 символов.';
-            }
-
-            if (field.name === 'password' && validity.badInput) {
-                return 'Проверьте корректность пароля.';
-            }
-
-            return field.validationMessage || 'Проверьте корректность введённых данных.';
-        }
+        const emailInput = form.querySelector('input[name="email"]');
+        const passwordInput = form.querySelector('input[name="password"]');
+        const errorTextEl = errorBox.querySelector('[data-auth-client-error-text]');
 
         function showError(message) {
+            if (errorTextEl) {
+                errorTextEl.textContent = message;
+            }
             errorBox.hidden = false;
-            errorBox.querySelector('[data-auth-client-error-text]').textContent = message;
+            if (serverErrorBox) {
+                serverErrorBox.hidden = true;
+            }
         }
 
         function clearError() {
+            if (errorTextEl) {
+                errorTextEl.textContent = '';
+            }
             errorBox.hidden = true;
-            errorBox.querySelector('[data-auth-client-error-text]').textContent = '';
         }
 
-        form.addEventListener(
-            'invalid',
-            function(event) {
-                event.preventDefault();
-                showError(messageForField(event.target));
-            },
-            true
-        );
-
-        form.addEventListener('submit', function(event) {
-            clearError();
-
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                const invalidField = form.querySelector(':invalid');
-                if (invalidField instanceof HTMLElement) {
-                    invalidField.focus();
-                    showError(messageForField(invalidField));
-                }
+        function getEmailMessage() {
+            if (!emailInput) {
+                return null;
             }
-        });
 
-        form.querySelectorAll('input').forEach((field) => {
-            field.addEventListener('input', function() {
-                if (form.checkValidity()) {
-                    clearError();
+            const value = emailInput.value.trim();
+            if (!value) {
+                return 'Введите email.';
+            }
+
+            // Используем встроенную проверку формата email (type="email")
+            if (emailInput.validity && (emailInput.validity.typeMismatch || emailInput.validity.badInput)) {
+                return 'Введите корректный email.';
+            }
+
+            return null;
+        }
+
+        function getPasswordMessage() {
+            if (!passwordInput) {
+                return null;
+            }
+
+            const value = passwordInput.value || '';
+            if (value.length < 8) {
+                return 'Пароль должен быть длиной от 8 до 256 символов.';
+            }
+
+            return null;
+        }
+
+        // На старте всегда скрываем, чтобы не отображать пустую красную плашку.
+        clearError();
+
+        if (emailInput && passwordInput) {
+            // Требование: если email валидный и пользователь переключился на пароль - ничего не показывать,
+            // а если email невалидный - показать предупреждение про email.
+            emailInput.addEventListener('blur', function() {
+                window.setTimeout(function() {
+                    if (document.activeElement === passwordInput) {
+                        const emailMessage = getEmailMessage();
+                        if (emailMessage) {
+                            showError(emailMessage);
+                        } else {
+                            clearError();
+                        }
+                    }
+                }, 0);
+            });
+
+            // Если пользователь уже на поле пароля и правит email - обновляем сообщение.
+            emailInput.addEventListener('input', function() {
+                if (document.activeElement === passwordInput) {
+                    const emailMessage = getEmailMessage();
+                    if (emailMessage) {
+                        showError(emailMessage);
+                    } else {
+                        clearError();
+                    }
                 }
             });
+        }
+
+        // Требование: пароль проверяем ДО отправки формы и не трогаем backend, если он короче 8 символов.
+        form.addEventListener('submit', function(event) {
+            const passwordMessage = getPasswordMessage();
+            if (passwordMessage) {
+                event.preventDefault();
+                passwordInput?.focus();
+                showError(passwordMessage);
+                return;
+            }
+
+            const emailMessage = getEmailMessage();
+            if (emailMessage) {
+                event.preventDefault();
+                emailInput?.focus();
+                showError(emailMessage);
+                return;
+            }
+
+            // Клиентская валидация прошла: ошибки можно скрыть.
+            clearError();
         });
     });
 });
