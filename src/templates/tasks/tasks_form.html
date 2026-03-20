@@ -1,6 +1,6 @@
 {% extends "base_form.html" %}
 
-{% block title %}Новая тема - HabitFlow{% endblock %}
+{% block title %}Новая задача - HabitFlow{% endblock %}
 
 {% block form_icon %}<i class="fas fa-tag"></i>{% endblock %}
 {% block form_heading %}{% if task.name %}Обновление{% else %}Создание{% endif %} задачи{% endblock %}
@@ -32,7 +32,7 @@
         </label>
         <div class="themes-radio-container">
             <div class="theme-radio-option">
-                <input type="radio" id="theme-none" name="theme_id" value="NoTheme" class="theme-radio-input" checked>
+                <input type="radio" id="theme-none" name="theme_id" value="NoTheme" class="theme-radio-input" {% if not task.theme_id %}checked{% endif %}>
                 <label for="theme-none" class="theme-radio-label">
                     <span class="theme-color-indicator" style="background-color: #95a5a6"></span>
                     <span class="theme-name">Без темы</span>

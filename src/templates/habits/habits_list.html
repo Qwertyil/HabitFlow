@@ -1,5 +1,10 @@
 {% extends "base_list.html" %}
 
+{% set current_status = request.query_params.get('status', 'todays') %}
+{% set current_schedule_type = request.query_params.get('schedule_type', 'all') %}
+{% set current_sort = request.query_params.get('sort', 'created_at') %}
+{% set current_order = request.query_params.get('order', 'desc') %}
+
 {% block title %}Привычки - HabitFlow{% endblock %}
 
 {% block page_icon %}<i class="fas fa-sync-alt"></i>{% endblock %}
@@ -12,43 +17,43 @@
     <div class="filter-group">
         <label for="habit-status-filter"><i class="fas fa-check-circle"></i> Статус:</label>
         <select id="habit-status-filter" class="form-control">
-            <option value="todays">Сегодня</option>
-            <option value="active">Активные</option>
-            <option value="completed">Выполненные</option>
-            <option value="archived">Архив</option>
+            <option value="todays" {% if current_status == 'todays' %}selected{% endif %}>Сегодня</option>
+            <option value="active" {% if current_status == 'active' %}selected{% endif %}>Активные</option>
+            <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Выполненные</option>
+            <option value="archived" {% if current_status == 'archived' %}selected{% endif %}>Архив</option>
         </select>
     </div>
 
     <div class="filter-group">
         <label for="habit-schedule-filter"><i class="fas fa-calendar-alt"></i> Периодичность:</label>
         <select id="habit-schedule-filter" class="form-control">
-            <option value="all">Все</option>
-            <option value="daily">Ежедневно</option>
-            <option value="weekly_days">Дни недели</option>
-            <option value="monthly_day">День месяца</option>
-            <option value="yearly_date">Дата года</option>
-            <option value="interval_cycle">Интервальное</option>
+            <option value="all" {% if current_schedule_type == 'all' %}selected{% endif %}>Все</option>
+            <option value="daily" {% if current_schedule_type == 'daily' %}selected{% endif %}>Ежедневно</option>
+            <option value="weekly_days" {% if current_schedule_type == 'weekly_days' %}selected{% endif %}>Дни недели</option>
+            <option value="monthly_day" {% if current_schedule_type == 'monthly_day' %}selected{% endif %}>День месяца</option>
+            <option value="yearly_date" {% if current_schedule_type == 'yearly_date' %}selected{% endif %}>Дата года</option>
+            <option value="interval_cycle" {% if current_schedule_type == 'interval_cycle' %}selected{% endif %}>Интервальное</option>
         </select>
     </div>
 
     <div class="filter-group">
         <label for="sort-habits"><i class="fas fa-sort"></i> Сортировка:</label>
         <select id="sort-habits" class="form-control">
-            <option value="created_at">По дате создания</option>
-            <option value="updated_at">По дате обновления</option>
-            <option value="name">По названию</option>
-            <option value="streak">По серии</option>
+            <option value="created_at" {% if current_sort == 'created_at' %}selected{% endif %}>По дате создания</option>
+            <option value="updated_at" {% if current_sort == 'updated_at' %}selected{% endif %}>По дате обновления</option>
+            <option value="name" {% if current_sort == 'name' %}selected{% endif %}>По названию</option>
+            <option value="streak" {% if current_sort == 'streak' %}selected{% endif %}>По серии</option>
         </select>
     </div>
 
-    <div class="filter-group">
+    <div class="filter-group filter-group-order">
         <label><i class="fas fa-sort-amount-down"></i> Порядок:</label>
         <div class="sort-order-buttons">
-            <button id="habit-sort-asc" class="btn-order" data-order="asc" title="По возрастанию">
+            <button id="habit-sort-asc" class="btn-order {% if current_order == 'asc' %}active{% endif %}" data-order="asc" title="По возрастанию">
                 <i class="fas fa-sort-amount-up"></i>
                 <span>Возрастание</span>
             </button>
-            <button id="habit-sort-desc" class="btn-order active" data-order="desc" title="По убыванию">
+            <button id="habit-sort-desc" class="btn-order {% if current_order == 'desc' %}active{% endif %}" data-order="desc" title="По убыванию">
                 <i class="fas fa-sort-amount-down"></i>
                 <span>Убывание</span>
             </button>

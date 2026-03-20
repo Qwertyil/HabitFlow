@@ -70,7 +70,7 @@ async def create_habit_page(
     request: Request,
     context: dict[str, Any] = Depends(get_template_context),
 ):
-    context.update({"current_page": "habits"})
+    context.update({"current_page": "habits", "hide_sidebar": True})
     return templates.TemplateResponse(request, "habits/habits_form.html", context)
 
 
@@ -92,7 +92,7 @@ async def habit_page(
         return templates.TemplateResponse(
             request, "message.html", context, status_code=status.HTTP_404_NOT_FOUND
         )
-    context.update({"habit": habit, "current_page": "habits"})
+    context.update({"habit": habit, "current_page": "habits", "hide_sidebar": True})
     return templates.TemplateResponse(request, "habits/habits_form.html", context)
 
 
@@ -119,6 +119,7 @@ async def create_habit(
         context.update(
             {
                 "current_page": "habits",
+                "hide_sidebar": True,
                 "error_message": csrf_error_message(),
             }
         )
@@ -158,7 +159,7 @@ async def create_habit(
                 },
             )
         context = error_context_updater(context, f"Ошибка создания привычки: {exc}")
-        context.update({"current_page": "habits"})
+        context.update({"current_page": "habits", "hide_sidebar": True})
         return templates.TemplateResponse(
             request,
             "habits/habits_form.html",

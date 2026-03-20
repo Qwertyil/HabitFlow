@@ -68,6 +68,7 @@ async def create_task_page(
     context.update(
         {
             "current_page": "tasks",
+            "hide_sidebar": True,
             "priorities": await service.get_task_priorities(),
             "task": {},  # Empty task object for the form
         }
@@ -100,6 +101,7 @@ async def task_page(
     context.update(
         {
             "current_page": "tasks",
+            "hide_sidebar": True,
             "priorities": await service.get_task_priorities(),
             "task": {
                 "id": id,

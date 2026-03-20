@@ -1,5 +1,14 @@
 {% extends "base_list.html" %}
 
+{% set current_status = request.query_params.get('status', 'active') %}
+{% set current_sort = request.query_params.get('sort', 'created_at') %}
+{% set current_order = request.query_params.get('order', 'desc') %}
+{% if current_sort == 'created' %}
+    {% set current_sort = 'created_at' %}
+{% elif current_sort == 'updated' %}
+    {% set current_sort = 'updated_at' %}
+{% endif %}
+
 {% block page_icon %}<i class="fas fa-tasks"></i>{% endblock %}
 {% block page_title %}Задачи{% endblock %}
 {% block create_url %}/tasks/new{% endblock %}
@@ -10,29 +19,29 @@
     <div class="filter-group">
         <label for="status-filter"><i class="fas fa-check-circle"></i> Статус:</label>
         <select id="status-filter" class="form-control">
-            <option value="active">Активные</option>
-            <option value="completed">Выполненные</option>
+            <option value="active" {% if current_status == 'active' %}selected{% endif %}>Активные</option>
+            <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Выполненные</option>
         </select>
     </div>
 
     <div class="filter-group">
         <label for="sort-tasks"><i class="fas fa-sort"></i> Сортировка:</label>
         <select id="sort-tasks" class="form-control">
-            <option value="created_at">По дате создания</option>
-            <option value="updated_at">По дате обновления</option>
-            <option value="name">По названию</option>
-            <option value="priority">По приоритету</option>
+            <option value="created_at" {% if current_sort == 'created_at' %}selected{% endif %}>По дате создания</option>
+            <option value="updated_at" {% if current_sort == 'updated_at' %}selected{% endif %}>По дате обновления</option>
+            <option value="name" {% if current_sort == 'name' %}selected{% endif %}>По названию</option>
+            <option value="priority" {% if current_sort == 'priority' %}selected{% endif %}>По приоритету</option>
         </select>
     </div>
 
-    <div class="filter-group">
+    <div class="filter-group filter-group-order">
         <label><i class="fas fa-sort-amount-down"></i> Порядок:</label>
         <div class="sort-order-buttons">
-            <button id="sort-asc" class="btn-order" data-order="asc" title="По возрастанию">
+            <button id="sort-asc" class="btn-order {% if current_order == 'asc' %}active{% endif %}" data-order="asc" title="По возрастанию">
                 <i class="fas fa-sort-amount-up"></i>
                 <span>Возрастание</span>
             </button>
-            <button id="sort-desc" class="btn-order active" data-order="desc" title="По убыванию">
+            <button id="sort-desc" class="btn-order {% if current_order == 'desc' %}active{% endif %}" data-order="desc" title="По убыванию">
                 <i class="fas fa-sort-amount-down"></i>
                 <span>Убывание</span>
             </button>

@@ -49,7 +49,7 @@ async def get_themes(
 
     context.update(
         {
-            "current_page": "None",
+            "current_page": "themes",
             "themes_list": themes_list,
             "themes_count": themes_count,
             "themes_page": page,
@@ -74,7 +74,13 @@ async def create_theme_page(
     service: ThemeService = Depends(get_theme_service),
 ):
     existing_colors = await service.get_existing_colors()
-    context.update({"current_page": "themes", "colors": THEME_COLORS - existing_colors})
+    context.update(
+        {
+            "current_page": "themes",
+            "hide_sidebar": True,
+            "colors": THEME_COLORS - existing_colors,
+        }
+    )
     return templates.TemplateResponse(request, "themes/themes_form.html", context)
 
 
@@ -180,7 +186,13 @@ async def get_theme(
     colors = list(THEME_COLORS - existing_colors)
     colors.insert(0, theme.color)
     context.update(
-        {"theme_id": str(theme.id), "theme_name": theme.name, "colors": colors}
+        {
+            "current_page": "themes",
+            "hide_sidebar": True,
+            "theme_id": str(theme.id),
+            "theme_name": theme.name,
+            "colors": colors,
+        }
     )
     return templates.TemplateResponse(request, "themes/themes_update.html", context)
 
