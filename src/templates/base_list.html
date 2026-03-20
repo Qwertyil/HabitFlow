@@ -27,7 +27,7 @@
                 class="theme-filter-link theme-filter-pill {% if topic.is_active %}active{% endif %}"
                 data-theme-id="{{ topic.id }}"
             >
-                <i class="fas fa-circle"></i>
+                <i class="fas fa-circle" style="color: {{ topic.color }};"></i>
                 <span>{{ topic.name }}</span>
             </a>
             {% endfor %}
