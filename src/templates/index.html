@@ -19,7 +19,11 @@
             <div class="task-list">
                 {% if tasks %}
                     {% for task in tasks %}
-                    <div class="task-item priority-{{ task.priority }}">
+                    <div class="task-item
+                        {% if task.priority == 'high' %}high-priority
+                        {% elif task.priority == 'medium' %}medium-priority
+                        {% elif task.priority == 'low' %}low-priority
+                        {% endif %}">
                         <div class="task-checkbox">
                             <input type="checkbox"
                                     id="task-{{ task.id }}"

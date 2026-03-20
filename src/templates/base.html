@@ -7,6 +7,10 @@
     <title>{% block title %}HabitFlow - Управляй своими привычками{% endblock %}</title>
     <link href="{{ url_for('static', path='/css/style.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', path='/css/layout-fixes.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/lists.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/forms.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/dashboard.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/stats.css') }}" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body data-page="{{ current_page|default('app', true) }}">
