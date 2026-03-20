@@ -297,3 +297,15 @@ body[data-page="stats"] .main-container-full {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* Keyboard focus visibility (prod-hardening) */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+    outline: 3px solid var(--primary) !important;
+    outline-offset: 2px;
+}

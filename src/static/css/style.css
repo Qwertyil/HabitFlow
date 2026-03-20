@@ -85,6 +85,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    min-height: 44px;
 }
 
 .nav-link:hover {
@@ -155,6 +156,7 @@ body {
     align-items: center;
     gap: 0.6rem;
     cursor: pointer;
+    min-height: 44px;
 }
 
 .nav-dropdown-action:hover {
@@ -165,7 +167,7 @@ body {
 .main-container {
     display: flex;
     flex: 1;
-    overflow: hidden;
+    overflow: visible;
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
@@ -532,6 +534,11 @@ body {
     padding: 0.5rem;
     border-radius: 4px;
     transition: all 0.3s ease;
+    min-width: 40px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-task-edit:hover, .btn-habit-edit:hover {

@@ -706,6 +706,7 @@
     align-items: center;
     gap: 6px;
     padding: 8px 12px;
+    min-height: 40px;
     background: transparent;
     border: none;
     border-radius: 6px;
