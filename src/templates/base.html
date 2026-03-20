@@ -125,6 +125,40 @@
             </div>
             {% endblock %}
         </aside>
+        {% else %}
+        {# When sidebar is hidden (e.g. lists/forms), keep the stat DOM in the page.
+           Some client-side features (and integration tests) rely on these element ids. #}
+        {% if stats is defined %}
+        <div class="sidebar-stats-hidden" aria-hidden="true">
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-value" id="stat-active-tasks">{{ stats.active_tasks|default(0) }}</span>
+                    <span class="stat-label">активных задач</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="stat-total-habits">{{ stats.total_habits|default(0) }}</span>
+                    <span class="stat-label">привычек</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="stat-active-habits">{{ stats.active_habits|default(0) }}</span>
+                    <span class="stat-label">активных привычек</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="stat-due-habits-today">{{ stats.due_habits_today|default(0) }}</span>
+                    <span class="stat-label">привычек на сегодня</span>
+                </div>
+                <div class="stat-item">
+                    <span
+                        class="stat-value"
+                        id="stat-success-rate"
+                        data-due-habits-today="{{ stats.due_habits_today|default(0) }}"
+                        data-completed-habits-today="{{ stats.completed_habits_today|default(0) }}"
+                    >{{ stats.success_rate|default(0) }}%</span>
+                    <span class="stat-label">успех</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
         {% endif %}
 
         <!-- Правая основная часть -->

@@ -2869,6 +2869,12 @@ body {
     padding: 1rem 0;
 }
 
+/* Some pages hide the sidebar layout, but keep stat counters in DOM
+   for client-side updates and integration tests. */
+.sidebar-stats-hidden {
+    display: none;
+}
+
 .auth-card {
     width: min(100%, 460px);
     background: linear-gradient(180deg, #ffffff 0%, #f6fbff 100%);

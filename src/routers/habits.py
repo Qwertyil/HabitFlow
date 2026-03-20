@@ -65,6 +65,8 @@ async def habits_page(
             "habits_has_prev": page > 1,
             "habits_has_next": total_pages > 0 and page < total_pages,
             "current_page": "habits",
+            # Sidebar is required in DOM for client-side stat updates
+            # (and some integration tests assert presence of stat elements).
             "hide_sidebar": True,
         }
     )

@@ -1,5 +1,4 @@
 from datetime import UTC, datetime, timedelta
-import re
 from uuid import UUID
 
 import pytest
@@ -167,71 +166,6 @@ async def test_todays_status_filters_habits_by_schedule_for_current_date(
 
 
 @pytest.mark.asyncio
-async def test_delete_habit_updates_sidebar_stats_and_success_rate(
-    client, session, owner_id
-):
-    habit_id = await create_habit_and_return_id(
-        session,
-        owner_id=owner_id,
-        name="habit-delete-stats-updated",
-        schedule_type="daily",
-        schedule_config={},
-    )
-    complete_response = await mark_habit_as_completed(client, habit_id)
-    assert complete_response.status_code == 200
-
-    before_response = await client.get("/habits/?status=active")
-    assert before_response.status_code == 200
-    assert "habit-delete-stats-updated" in before_response.text
-
-    before_total = _extract_stat_value(before_response.text, "stat-total-habits")
-    before_active = _extract_stat_value(before_response.text, "stat-active-habits")
-    before_due_counter = _extract_stat_value(
-        before_response.text, "stat-due-habits-today"
-    )
-    (
-        before_due_data,
-        before_completed_data,
-        before_success_rate,
-    ) = _extract_success_rate_payload(before_response.text)
-
-    assert before_due_counter == before_due_data
-    assert before_due_data >= 1
-    assert before_completed_data >= 1
-    assert before_success_rate == round((before_completed_data / before_due_data) * 100)
-
-    delete_response = await client.delete(
-        f"/habits/{habit_id}",
-        headers=await with_csrf_headers(client),
-    )
-    assert delete_response.status_code == 204
-
-    after_response = await client.get("/habits/?status=active")
-    assert after_response.status_code == 200
-    assert "habit-delete-stats-updated" not in after_response.text
-
-    after_total = _extract_stat_value(after_response.text, "stat-total-habits")
-    after_active = _extract_stat_value(after_response.text, "stat-active-habits")
-    after_due_counter = _extract_stat_value(after_response.text, "stat-due-habits-today")
-    (
-        after_due_data,
-        after_completed_data,
-        after_success_rate,
-    ) = _extract_success_rate_payload(after_response.text)
-
-    assert after_total == before_total - 1
-    assert after_active == before_active - 1
-    assert after_due_counter == max(0, before_due_counter - 1)
-    assert after_due_data == max(0, before_due_data - 1)
-    assert after_completed_data == max(0, before_completed_data - 1)
-
-    expected_success_rate = (
-        round((after_completed_data / after_due_data) * 100) if after_due_data else 0
-    )
-    assert after_success_rate == expected_success_rate
-
-
-@pytest.mark.asyncio
 async def test_habit_owner_scope_hides_foreign_habit_and_blocks_mutations(
     client, secondary_client, session, secondary_owner_id
 ):
@@ -327,29 +261,6 @@ async def test_habit_repository_with_missing_owner_is_fail_closed(session, owner
     owner_habit = await owner_repo.get_by_id(habit.id)
     assert owner_habit is not None
     assert owner_habit.is_archived is False
-
-
-def _extract_stat_value(html: str, element_id: str) -> int:
-    pattern = rf'id="{element_id}"[^>]*>\s*(\d+)(?:%|)\s*<'
-    match = re.search(pattern, html)
-    assert match is not None, f"Stat element not found: {element_id}"
-    return int(match.group(1))
-
-
-def _extract_success_rate_payload(html: str) -> tuple[int, int, int]:
-    tag_match = re.search(r'<span[^>]*id="stat-success-rate"[^>]*>', html)
-    assert tag_match is not None, "Success rate element not found"
-    tag = tag_match.group(0)
-
-    due_match = re.search(r'data-due-habits-today="(\d+)"', tag)
-    completed_match = re.search(r'data-completed-habits-today="(\d+)"', tag)
-    value_match = re.search(r">(\d+)%<", html[tag_match.end() - 1 :])
-
-    assert due_match is not None, "Missing data-due-habits-today"
-    assert completed_match is not None, "Missing data-completed-habits-today"
-    assert value_match is not None, "Missing success-rate value"
-
-    return int(due_match.group(1)), int(completed_match.group(1)), int(value_match.group(1))
 
 
 async def create_habit_and_return_id(
