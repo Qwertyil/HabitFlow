@@ -141,10 +141,97 @@
         </div>
     {% endif %}
 </div>
-<div
-    id="tasks-pagination"
-    class="tasks-pagination"
-    data-tasks-count="{{ tasks_count|default(0) }}"
-></div>
+{% if tasks_has_prev or tasks_has_next %}
+{% set pagination_base = namespace(parts=[]) %}
+{% for key, value in request.query_params.multi_items() %}
+    {% if key != 'page' %}
+        {% set pagination_base.parts = pagination_base.parts + [key ~ '=' ~ (value|urlencode)] %}
+    {% endif %}
+{% endfor %}
+{% set pagination_base_query = pagination_base.parts|join('&') %}
+
+{% set pagination_base_url = request.url.path %}
+{% if pagination_base_query %}
+    {% set pagination_base_url = request.url.path ~ '?' ~ pagination_base_query %}
+{% endif %}
+
+<div id="tasks-pagination" class="tasks-pagination">
+    <div class="tasks-pagination-controls">
+        {% set prev_page = tasks_page - 1 %}
+        {% if tasks_has_prev %}
+            {% if prev_page <= 1 %}
+                {% set prev_url = pagination_base_url %}
+            {% else %}
+                {% set prev_url = pagination_base_query
+                    and (request.url.path ~ '?' ~ pagination_base_query ~ '&page=' ~ prev_page)
+                    or (request.url.path ~ '?page=' ~ prev_page) %}
+            {% endif %}
+            <a
+                class="btn btn-outline btn-sm tasks-page-btn"
+                href="{{ prev_url }}"
+            >
+                Назад
+            </a>
+            {% set show_prev_number = True %}
+        {% else %}
+            <span class="btn btn-outline btn-sm tasks-page-btn disabled" aria-disabled="true">
+                Назад
+            </span>
+            {% set show_prev_number = False %}
+        {% endif %}
+
+        {% if show_prev_number %}
+            <a
+                class="btn btn-outline btn-sm tasks-page-btn"
+                href="{{ prev_url }}"
+            >
+                {{ prev_page }}
+            </a>
+        {% endif %}
+
+        <span class="btn btn-outline btn-sm tasks-page-btn active" aria-current="page">
+            {{ tasks_page }}
+        </span>
+
+        {% if tasks_has_next %}
+            {% set next_page = tasks_page + 1 %}
+            {% if next_page <= 1 %}
+                {% set next_url = pagination_base_url %}
+            {% else %}
+                {% set next_url = pagination_base_query
+                    and (request.url.path ~ '?' ~ pagination_base_query ~ '&page=' ~ next_page)
+                    or (request.url.path ~ '?page=' ~ next_page) %}
+            {% endif %}
+            <a
+                class="btn btn-outline btn-sm tasks-page-btn"
+                href="{{ next_url }}"
+            >
+                {{ next_page }}
+            </a>
+        {% endif %}
+
+        {% if tasks_has_next %}
+            <a
+                class="btn btn-outline btn-sm tasks-page-btn"
+                href="{{ next_url }}"
+            >
+                Вперёд
+            </a>
+        {% else %}
+            <span class="btn btn-outline btn-sm tasks-page-btn disabled" aria-disabled="true">
+                Вперёд
+            </span>
+        {% endif %}
+    </div>
+
+    <div class="tasks-pagination-info">
+        {% if tasks_total_pages > 0 %}
+            Страница {{ tasks_page }} из {{ tasks_total_pages }}
+        {% else %}
+            Страница {{ tasks_page }}
+        {% endif %}
+    </div>
+</div>
+{% endif %}
 <script src="{{ url_for('static', path='/js/list_tasks.js') }}"></script>
 {% endblock %}

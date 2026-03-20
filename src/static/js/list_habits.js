@@ -11,28 +11,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    const allowedStatuses = new Set(['todays', 'active', 'completed', 'archived']);
-    const allowedScheduleTypes = new Set([
-        'daily',
-        'weekly_days',
-        'monthly_day',
-        'yearly_date',
-        'interval_cycle',
-        'all'
-    ]);
-    const allowedSorts = new Set(['created_at', 'updated_at', 'name', 'streak']);
-    const allowedOrders = new Set(['asc', 'desc']);
-
-    const params = new URLSearchParams(window.location.search);
-    const parsedStatus = params.get('status');
-    const parsedScheduleType = params.get('schedule_type');
-    const parsedSort = params.get('sort');
-    const parsedOrder = params.get('order');
-
-    statusFilter.value = allowedStatuses.has(parsedStatus) ? parsedStatus : 'todays';
-    scheduleFilter.value = allowedScheduleTypes.has(parsedScheduleType) ? parsedScheduleType : 'all';
-    sortSelect.value = allowedSorts.has(parsedSort) ? parsedSort : 'created_at';
-    let currentOrder = allowedOrders.has(parsedOrder) ? parsedOrder : 'desc';
+    // Initial UI state должен приходить с сервера (из шаблона).
+    // Поэтому здесь мы не переустанавливаем values select'ов и не переключаем active-классы —
+    // только читаем текущее состояние из DOM.
+    let currentOrder = 'desc';
+    if (sortAscBtn.classList.contains('active')) {
+        currentOrder = 'asc';
+    } else if (sortDescBtn.classList.contains('active')) {
+        currentOrder = 'desc';
+    }
 
     function setOrderButtons(order) {
         sortAscBtn.classList.toggle('active', order === 'asc');
@@ -178,9 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         paginationContainer.appendChild(info);
     }
 
-    setOrderButtons(currentOrder);
     syncThemeLinks();
-    renderPagination();
     bindDeleteButtons();
 
     statusFilter.addEventListener('change', submitFilters);

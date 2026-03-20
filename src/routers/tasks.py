@@ -48,8 +48,19 @@ async def tasks_page(
         sort=sort,
         order=order,
     )
+    total_pages = (tasks_count + per_page - 1) // per_page if tasks_count else 0
     context.update(
-        {"tasks": tasks, "tasks_count": tasks_count, "current_page": "tasks"}
+        {
+            "tasks": tasks,
+            "tasks_count": tasks_count,
+            "tasks_page": page,
+            "tasks_per_page": per_page,
+            "tasks_total_pages": total_pages,
+            "tasks_has_prev": page > 1,
+            "tasks_has_next": total_pages > 0 and page < total_pages,
+            "current_page": "tasks",
+            "hide_sidebar": True,
+        }
     )
     return templates.TemplateResponse(request, "tasks/tasks_list.html", context)
 

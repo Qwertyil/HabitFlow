@@ -50,6 +50,7 @@ async def get_themes(
     context.update(
         {
             "current_page": "themes",
+            "hide_sidebar": True,
             "themes_list": themes_list,
             "themes_count": themes_count,
             "themes_page": page,

@@ -66,6 +66,13 @@ body {
     max-width: min(100%, 960px);
 }
 
+body[data-page="tasks"] .main-container-full,
+body[data-page="habits"] .main-container-full,
+body[data-page="themes"] .main-container-full,
+body[data-page="stats"] .main-container-full {
+    max-width: min(100%, var(--app-max-width));
+}
+
 .sidebar {
     width: var(--app-sidebar-width);
     flex: 0 0 var(--app-sidebar-width);
@@ -92,6 +99,7 @@ body {
 
 .page-header,
 .list-container,
+.list-theme-bar,
 .filters-container,
 .form-container,
 .auth-card,
@@ -115,6 +123,56 @@ body {
 
 .page-header .btn {
     flex-shrink: 0;
+}
+
+.list-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.list-theme-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    overflow-x: auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    scrollbar-width: thin;
+}
+
+.theme-filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 0 0 auto;
+    min-width: 0;
+    padding: 0.7rem 0.95rem;
+    border-radius: 999px;
+    border: 1px solid #d8e5ef;
+    background: #f8fbfe;
+    color: #35526c;
+    text-decoration: none;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.theme-filter-pill:hover {
+    background: #eef6fd;
+    border-color: #bcd5ea;
+    color: #204d74;
+}
+
+.theme-filter-pill.active {
+    color: #fff;
+    border-color: transparent;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    box-shadow: 0 8px 18px rgba(52, 152, 219, 0.2);
+}
+
+.theme-filter-pill.active i {
+    color: rgba(255, 255, 255, 0.92) !important;
 }
 
 .filters-container {
@@ -255,6 +313,7 @@ body {
     }
 
     .page-header,
+    .list-theme-bar,
     .list-container,
     .filters-container {
         padding: 1rem;
@@ -301,6 +360,15 @@ body {
 
     .filters-container {
         grid-template-columns: 1fr;
+    }
+
+    .list-theme-bar {
+        gap: 0.5rem;
+        padding: 0.85rem;
+    }
+
+    .theme-filter-pill {
+        padding: 0.65rem 0.85rem;
     }
 
     .sort-order-buttons {

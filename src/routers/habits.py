@@ -54,8 +54,19 @@ async def habits_page(
         order=order,
         due_today_only=status == "todays",
     )
+    total_pages = (habits_count + per_page - 1) // per_page if habits_count else 0
     context.update(
-        {"habits": habits, "habits_count": habits_count, "current_page": "habits"}
+        {
+            "habits": habits,
+            "habits_count": habits_count,
+            "habits_page": page,
+            "habits_per_page": per_page,
+            "habits_total_pages": total_pages,
+            "habits_has_prev": page > 1,
+            "habits_has_next": total_pages > 0 and page < total_pages,
+            "current_page": "habits",
+            "hide_sidebar": True,
+        }
     )
     return templates.TemplateResponse(request, "habits/habits_list.html", context)
 
