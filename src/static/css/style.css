@@ -449,7 +449,7 @@ body {
 }
 
 /* Адаптивность */
-@media (max-width: 1024px) {
+@media (max-width: 900px) {
     .content-grid {
         grid-template-columns: 1fr;
     }
@@ -3701,7 +3701,7 @@ body {
     color: #c67607;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 900px) {
     .stats-sections-grid,
     .stats-section-layout,
     .stats-detail-grid {
