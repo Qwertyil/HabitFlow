@@ -10,6 +10,7 @@ alwaysApply: false
 - auth session через отдельную cookie с opaque `session_id` и хранением payload в Redis.
 
 HabitFlow не использует JWT и не кладёт auth-данные в UI session.
+Визуальная light/dark тема тоже не хранится в UI session: она живёт только в браузерном `localStorage`.
 
 ## 2. Модель сессий
 
@@ -27,6 +28,10 @@ UI session используется для вспомогательного со
 - `selected_theme` — выбранная тема-фильтр для `tasks/habits`;
 - `google_oauth` — временный payload OAuth flow (`state`, `next`, `issued_at`).
 
+В UI session сейчас не хранится:
+- визуальная theme preference (`light` / `dark`);
+- любые server-side user settings.
+
 ### 3.2 Cookie UI session
 - Имя cookie по умолчанию: `habitflow_session`
 - Cookie подписывается `SessionMiddleware`
@@ -42,6 +47,7 @@ UI session используется для вспомогательного со
 - `selected_theme` обновляется из query-параметра `theme` на страницах со shared template context.
 - Если в UI session сохранена тема, которой больше нет у пользователя, фильтр автоматически очищается.
 - `google_oauth` записывается перед редиректом на Google и удаляется при callback независимо от исхода обработки.
+- Визуальная light/dark тема переключается только на клиенте через `localStorage["habitflow-ui-theme"]` и `html[data-ui-theme]`; источник истины по ней находится в `docs/theme-system.md`.
 
 ## 4. Auth session
 
