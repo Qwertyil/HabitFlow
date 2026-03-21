@@ -3,147 +3,161 @@
 {% block title %}Главная - HabitFlow{% endblock %}
 
 {% block content %}
-<div class="dashboard">
-    <div class="welcome-banner">
-        <h1>Добро пожаловать в HabitFlow!</h1>
-        <p>Управляй своими задачами и формируй полезные привычки</p>
-    </div>
-
-    <div class="content-grid">
-        <!-- Ближайшие задачи -->
-        <div class="card">
-            <div class="card-header">
-                <h2><i class="fas fa-clock"></i>Задачи</h2>
-                <a href="/tasks" class="btn-link">Все задачи</a>
-            </div>
-            <div class="task-list">
-                {% if tasks %}
-                    {% for task in tasks %}
-                    <div class="task-item
-                        {% if task.priority == 'high' %}high-priority
-                        {% elif task.priority == 'medium' %}medium-priority
-                        {% elif task.priority == 'low' %}low-priority
-                        {% endif %}">
-                        <div class="task-checkbox">
-                            <input type="checkbox"
-                                    id="task-{{ task.id }}"
-                                    data-task-id="{{ task.id }}"
-                                   {% if task.completed %}checked{% endif %}>
-                            <label for="task-{{ task.id }}"></label>
-                        </div>
-                        <div class="task-content">
-                            <span class="task-title {% if task.completed %}completed{% endif %}">
-                                {{ task.name }}
-                            </span>
-                            {% if task.description %}
-                            <span class="task-description">
-                                {{ task.description[:80] }}{% if task.description|length > 80 %}...{% endif %}
-                            </span>
-                            {% endif %}
-                        </div>
-                        <div class="task-actions">
-                            {% if task.theme_name %}
-                            <span class="task-tag" style="background-color: {{ task.theme_color }}; color: #fff;">
-                                {{ task.theme_name }}
-                            </span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty-state">
-                        <p>Нет активных задач</p>
-                        <a href="/tasks/new" class="new-task">
-                            <i class="fas fa-plus"></i> Создать задачу
-                        </a>
-                    </div>
-                {% endif %}
-            </div>
+<div class="dashboard-page">
+    <section class="hero-banner">
+        <div class="hero-copy">
+            <span class="hero-eyebrow"><i class="fa-solid fa-bolt"></i> Ежедневный дашборд</span>
+            <h1 class="hero-title">Добро пожаловать{% if current_user_display_name %}, {{ current_user_display_name }}{% endif %}!</h1>
+            <p>Управляйте задачами, темами и привычками в одном спокойном рабочем ритме без лишних экранов и перезагрузок.</p>
         </div>
+        <div class="hero-badges">
+            <span class="hero-badge">
+                <i class="fa-regular fa-calendar"></i>
+                Сегодня
+            </span>
+            <span class="hero-badge">
+                <i class="fa-solid fa-fire-flame-curved"></i>
+                {{ stats.due_habits_today|default(0) }} привычек на сегодня
+            </span>
+        </div>
+    </section>
 
-        <!-- Трекер привычек -->
-        <div class="card">
-            <div class="card-header">
-                <h2><i class="fas fa-sync-alt"></i>Привычки</h2>
-                <a href="/habits" class="btn-link">Все привычки</a>
+    <div class="dashboard-grid">
+        <section class="surface-card dashboard-card">
+            <div class="card-header-row">
+                <h2><i class="fa-regular fa-circle-check"></i> Задачи</h2>
+                <a href="/tasks" data-enhanced-nav="true">Все задачи</a>
             </div>
-            <div class="habits-grid">
-                {% if habits %}
-                    {% for habit in habits %}
-                    {% set progress = habit.progress_percent %}
-                    <div class="habit-card {% if habit.completed_today %}is-completed{% else %}is-active{% endif %} {% if not habit.ends_on %}no-progress{% endif %}" data-habit-id="{{ habit.id }}">
-                        <div class="habit-card-top">
-                            <div class="habit-main">
-                                <h3 class="habit-title">{{ habit.name }}</h3>
-                            </div>
-                            <span class="habit-streak">{{ habit.current_streak }} дн.</span>
-                        </div>
-
-                        <div class="habit-tags">
-                            {% if habit.theme_name %}
-                            <span class="habit-chip habit-chip-theme" style="background-color: {{ habit.theme_color }}20; color: {{ habit.theme_color }}; border: 1px solid {{ habit.theme_color }}40;">
-                                <i class="fas fa-tag"></i>{{ habit.theme_name }}
-                            </span>
-                            {% endif %}
-                        </div>
-
-                        {% if habit.ends_on %}
-                        <div class="habit-progress">
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: {{ '%.2f'|format(progress) }}%"></div>
-                            </div>
-                            <span class="habit-progress-value">{{ '%.2f'|format(progress) }}%</span>
-                        </div>
+            {% if tasks %}
+            <div class="dashboard-task-list">
+                {% for task in tasks %}
+                <a
+                    href="/tasks/{{ task.id }}"
+                    class="dashboard-task-card"
+                    data-enhanced-nav="true"
+                    data-theme-key="{% if task.theme_name %}custom{% else %}none{% endif %}"
+                    style="--task-theme-color: {{ task.theme_color or '#8a90a8' }};"
+                >
+                    <div class="dashboard-task-main">
+                        <h3 class="dashboard-task-title">{{ task.name }}</h3>
+                        {% if task.description %}
+                        <p class="dashboard-task-description">
+                            {{ task.description[:90] }}{% if task.description|length > 90 %}...{% endif %}
+                        </p>
                         {% endif %}
-                        <div class="habit-actions habit-actions-dashboard">
-                            <a href="/habits/{{ habit.id }}" class="btn btn-outline btn-sm btn-habit-edit" title="Редактировать привычку">
-                                <i class="fas fa-pen"></i>
-                                <span>Редактировать</span>
-                            </a>
-                            <button class="btn btn-outline btn-sm btn-habit-complete {% if habit.completed_today or not habit.due_today %}completed{% endif %}"
-                                    data-habit-id="{{ habit.id }}"
-                                    {% if habit.completed_today or not habit.due_today %}disabled{% endif %}
-                                    title="Отметить выполнение">
-                                <i class="fas fa-check"></i>
-                                <span>
-                                    {% if habit.completed_today %}
-                                        Выполнено
-                                    {% elif not habit.due_today %}
-                                        Не на сегодня
+                    </div>
+                    {% if task.theme_name %}
+                    <span class="tag task-theme-badge">{{ task.theme_name }}</span>
+                    {% else %}
+                    <span class="badge badge-muted">Без темы</span>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <span class="empty-state-icon"><i class="fa-solid fa-list-check"></i></span>
+                <h3>Нет активных задач</h3>
+                <p>Добавьте первую задачу, чтобы она появилась в сегодняшней сводке.</p>
+                <a href="/tasks/new" class="btn btn-primary" data-enhanced-nav="true">
+                    <i class="fa-solid fa-plus"></i>
+                    Создать задачу
+                </a>
+            </div>
+            {% endif %}
+        </section>
+
+        <section class="surface-card dashboard-card">
+            <div class="card-header-row">
+                <h2><i class="fa-solid fa-arrow-trend-up"></i> Привычки на сегодня</h2>
+                <a href="/habits" data-enhanced-nav="true">Все привычки</a>
+            </div>
+            {% if habits %}
+            <div class="dashboard-habit-list">
+                {% for habit in habits %}
+                {% set progress = habit.progress_percent %}
+                <article class="dashboard-habit-card habit-card" data-habit-id="{{ habit.id }}" style="--habit-theme-color: {{ habit.theme_color or '#8a90a8' }};">
+                    <div class="dashboard-habit-top">
+                        <div>
+                            <h3 class="dashboard-habit-name">{{ habit.name }}</h3>
+                            <div class="habit-meta-row">
+                                {% if habit.theme_name %}
+                                <span class="tag habit-chip-theme">{{ habit.theme_name }}</span>
+                                {% endif %}
+                                <span class="tag habit-chip-schedule">
+                                    {% if habit.schedule_type == "daily" %}
+                                        Ежедневно
+                                    {% elif habit.schedule_type == "weekly_days" %}
+                                        Дни недели
+                                    {% elif habit.schedule_type == "monthly_day" %}
+                                        День месяца
+                                    {% elif habit.schedule_type == "yearly_date" %}
+                                        Дата года
                                     {% else %}
-                                        Выполнить
+                                        Интервал
                                     {% endif %}
                                 </span>
-                            </button>
+                            </div>
                         </div>
+                        <span class="tag streak-pill"><i class="fa-solid fa-fire-flame-curved"></i> {{ habit.current_streak }} дн.</span>
                     </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty-state">
-                        <p>Нет активных привычек</p>
-                        <a href="/habits/new" class="new-task">
-                            <i class="fas fa-plus"></i> Создать привычку
-                        </a>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
 
-        <!-- Цитата дня -->
-        <div class="card">
-            <div class="card-header">
+                    <div class="habit-progress-block">
+                        <div class="habit-progress-track">
+                            <span class="habit-progress-fill" style="width: {{ '%.2f'|format(progress) }}%;"></span>
+                        </div>
+                        <span class="habit-progress-copy">Прогресс периода: {{ '%.2f'|format(progress) }}%</span>
+                    </div>
+
+                    <div class="dashboard-habit-actions">
+                        <a href="/habits/{{ habit.id }}" class="btn btn-outline btn-sm" data-enhanced-nav="true">
+                            <i class="fa-regular fa-pen-to-square"></i>
+                            Изменить
+                        </a>
+                        <button
+                            class="btn btn-success btn-sm btn-habit-complete {% if habit.completed_today or not habit.due_today %}completed{% endif %}"
+                            data-habit-id="{{ habit.id }}"
+                            {% if habit.completed_today or not habit.due_today %}disabled{% endif %}
+                        >
+                            <i class="fa-solid fa-check"></i>
+                            <span>
+                                {% if habit.completed_today %}
+                                    Сделано сегодня
+                                {% elif not habit.due_today %}
+                                    Не на сегодня
+                                {% else %}
+                                    Выполнить
+                                {% endif %}
+                            </span>
+                        </button>
+                    </div>
+                </article>
+                {% endfor %}
             </div>
-            <div class="quote-card">
-                {% if quote %}
-                <blockquote class="quote-card-text">
-                    {{ quote.text }}
-                </blockquote>
-                <p class="quote-card-author">{{ quote.author }}</p>
-                {% else %}
-                <p class="quote-card-empty">Цитата появится здесь чуть позже.</p>
-                {% endif %}
+            {% else %}
+            <div class="empty-state">
+                <span class="empty-state-icon"><i class="fa-solid fa-seedling"></i></span>
+                <h3>Нет привычек на сегодня</h3>
+                <p>Создайте первую привычку и начните собирать серию без лишней сложности.</p>
+                <a href="/habits/new" class="btn btn-primary" data-enhanced-nav="true">
+                    <i class="fa-solid fa-plus"></i>
+                    Создать привычку
+                </a>
             </div>
-        </div>
+            {% endif %}
+        </section>
     </div>
+
+    <section class="quote-card">
+        <span class="quote-mark">"</span>
+        <div>
+            {% if quote %}
+            <p class="quote-text">{{ quote.text }}</p>
+            <p class="quote-author">{{ quote.author }}</p>
+            {% else %}
+            <p class="quote-text">Цитата появится здесь чуть позже.</p>
+            {% endif %}
+        </div>
+    </section>
 </div>
 {% endblock %}

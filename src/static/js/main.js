@@ -1,558 +1,125 @@
-let activeTasksCount = 0; // глобальная переменная для счётчика
-let dueHabitsTodayCount = 0;
-let completedHabitsTodayCount = 0;
-
-// Базовые функции для взаимодействия
-document.addEventListener('DOMContentLoaded', function() {
-    // Считываем начальное значение активных задач
-    const activeEl = document.getElementById('stat-active-tasks');
-    if (activeEl) {
-        activeTasksCount = parseInt(activeEl.textContent, 10) || 0;
-    }
-    initializeHabitStatsState();
-
-    initializeTaskStates(); // Инициализируем состояние выполненных задач
-    initializeEventHandlers();
-    addNotificationStyles();
-});
-
-function parseCounter(value, fallback = 0) {
-    return window.habitFlowUtils.parseNonNegativeInt(value, fallback);
-}
-
-function initializeHabitStatsState() {
-    const successEl = document.getElementById('stat-success-rate');
-    if (!successEl) {
-        return;
-    }
-
-    dueHabitsTodayCount = parseCounter(
-        successEl.dataset.dueHabitsToday ?? successEl.dataset.activeHabits,
-        0
-    );
-    completedHabitsTodayCount = parseCounter(successEl.dataset.completedHabitsToday, 0);
-    completedHabitsTodayCount = Math.min(completedHabitsTodayCount, dueHabitsTodayCount);
-    renderHabitSuccessRate();
-}
-
-function renderHabitSuccessRate() {
-    const successEl = document.getElementById('stat-success-rate');
-    if (!successEl) {
-        return;
-    }
-
-    dueHabitsTodayCount = Math.max(0, dueHabitsTodayCount);
-    completedHabitsTodayCount = Math.max(
-        0,
-        Math.min(completedHabitsTodayCount, dueHabitsTodayCount)
-    );
-
-    const successRate = dueHabitsTodayCount > 0
-        ? Math.round((completedHabitsTodayCount / dueHabitsTodayCount) * 100)
-        : 0;
-
-    successEl.dataset.dueHabitsToday = String(dueHabitsTodayCount);
-    successEl.dataset.completedHabitsToday = String(completedHabitsTodayCount);
-    successEl.textContent = `${successRate}%`;
-}
-
-function isTaskCompletedValue(completedAt) {
-    return Boolean(completedAt && completedAt !== 'None' && completedAt !== '' && completedAt !== 'null');
-}
-
-// Функция для инициализации состояния выполненных задач при загрузке страницы
-function initializeTaskStates() {
-    const taskItems = document.querySelectorAll('.task-item');
-    taskItems.forEach(taskItem => {
-        const completedAt = taskItem.dataset.completed;
-        const isCompleted = isTaskCompletedValue(completedAt);
-
-        if (isCompleted) {
-            // Задача выполнена – оставляем data-completed как есть
-            const checkbox = taskItem.querySelector('.task-checkbox input[type="checkbox"]');
-            if (checkbox) checkbox.checked = true;
-            const taskTitle = taskItem.querySelector('.task-title');
-            if (taskTitle) taskTitle.classList.add('completed');
-        } else {
-            // Задача активна – приводим data-completed к пустой строке
-            taskItem.dataset.completed = '';
-            const checkbox = taskItem.querySelector('.task-checkbox input[type="checkbox"]');
-            if (checkbox) checkbox.checked = false;
-            const taskTitle = taskItem.querySelector('.task-title');
-            if (taskTitle) taskTitle.classList.remove('completed');
-        }
-    });
-}
-
-function initializeEventHandlers() {
-    // Обработка чекбоксов задач
-    const taskCheckboxes = document.querySelectorAll('.task-checkbox input[type="checkbox"]');
-    taskCheckboxes.forEach(checkbox => {
-        if (checkbox.dataset.boundToggle === '1') {
+function initMainPageInteractions(root = document) {
+    root.querySelectorAll('.task-checkbox input[type="checkbox"]').forEach((checkbox) => {
+        if (checkbox.dataset.boundToggle === "1") {
             return;
         }
-        checkbox.dataset.boundToggle = '1';
-
-        checkbox.addEventListener('change', function() {
-            const taskItem = this.closest('.task-item');
-            const taskId = this.dataset.taskId || taskItem.dataset.taskId;
-
-            markTaskAsCompleted(taskId, this, taskItem);
-        });
-    });
-
-    // Обработка кнопок привычек
-    const habitButtons = document.querySelectorAll('.btn-habit-complete:not(.completed):not([disabled])');
-    habitButtons.forEach(button => {
-        if (button.dataset.boundHabitComplete === '1') {
-            return;
-        }
-        button.dataset.boundHabitComplete = '1';
-
-        button.addEventListener('click', function() {
-            const habitId = this.dataset.habitId ||
-                           this.id.replace('habit-', '') ||
-                           this.closest('.habit-card')?.dataset.habitId;
-            if (!habitId) {
-                showNotification('Модуль привычек пока в разработке', 'info');
-                return;
-            }
-            markHabitAsCompleted(habitId, this);
-        });
-    });
-
-    // Редактирование и удаление
-    initializeEditDeleteHandlers();
-}
-
-
-async function markTaskAsCompleted(taskId, checkbox, taskItem) {
-    const checkedNow = checkbox.checked;
-    const previousChecked = !checkedNow;
-
-    try {
-        showLoading(checkbox);
-
-        // Выбираем endpoint в зависимости от того, становится ли задача выполненной или нет
-        const endpoint = checkedNow ? `/tasks/${taskId}/complete` : `/tasks/${taskId}/incomplete`;
-
-        const response = await fetch(endpoint, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
-            }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            // После успеха определяем новое состояние (по ответу сервера)
-            // Сервер может вернуть completed_at или просто completed: true/false
-            const isCompleted = data.completed || (data.completed_at && data.completed_at !== '');
-
-            // Обновляем data-атрибут
-            if (isCompleted) {
-                taskItem.dataset.completed = data.completed_at || new Date().toISOString();
-            } else {
-                taskItem.dataset.completed = '';
-            }
-
-            // Визуальные изменения
-            if (isCompleted) {
-                taskItem.classList.add('completed');
-                const taskTitle = taskItem.querySelector('.task-title');
-                if (taskTitle) taskTitle.classList.add('completed');
-                showNotification('Задача выполнена!', 'success');
-                // Уменьшаем счётчик активных задач
-                activeTasksCount = Math.max(0, activeTasksCount - 1);
-            } else {
-                taskItem.classList.remove('completed');
-                const taskTitle = taskItem.querySelector('.task-title');
-                if (taskTitle) taskTitle.classList.remove('completed');
-                showNotification('Задача возвращена в активные', 'info');
-                // Увеличиваем счётчик активных задач
-                activeTasksCount += 1;
-            }
-
-            // Синхронизируем чекбокс (на случай, если сервер вернул иное)
-            checkbox.checked = isCompleted;
-
-            // Обновляем отображение статистики
-            const activeEl = document.getElementById('stat-active-tasks');
-            if (activeEl) activeEl.textContent = activeTasksCount;
-
-        } else {
-            // Ошибка сервера – откатываем чекбокс
-            checkbox.checked = previousChecked;
-            showNotification(data.error || 'Ошибка при обновлении задачи', 'error');
-        }
-    } catch (error) {
-        console.error('Error toggling task:', error);
-        checkbox.checked = previousChecked;
-        showNotification('Ошибка соединения с сервером', 'error');
-    } finally {
-        hideLoading(checkbox);
-    }
-}
-
-async function markHabitAsCompleted(habitId, button) {
-    const habitCard = button.closest('.habit-card');
-    if (!habitCard || !habitId) {
-        showNotification('Модуль привычек пока в разработке', 'info');
-        return;
-    }
-
-    const streakElement = habitCard.querySelector('.habit-streak');
-    const currentStreak = streakElement ? parseInt(streakElement.textContent) || 0 : 0;
-    const wasCompleted = habitCard.classList.contains('is-completed');
-
-    // Сохраняем исходное состояние
-    const originalText = button.innerHTML;
-    const originalClass = button.className;
-    const originalBgColor = button.style.backgroundColor;
-
-    try {
-        // Показываем загрузку
-        button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка...';
-
-        const response = await fetch(`/habits/${habitId}/complete`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
-            }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            if (data.changed && !wasCompleted) {
-                completedHabitsTodayCount = Math.min(
-                    dueHabitsTodayCount,
-                    completedHabitsTodayCount + 1
-                );
-                renderHabitSuccessRate();
-            }
-
-            // Визуальное подтверждение
-            button.innerHTML = '<i class="fas fa-check"></i> Выполнено!';
-            button.classList.add('completed');
-            button.style.backgroundColor = '#27ae60';
-            habitCard.classList.add('is-completed');
-
-            // Обновляем серию если есть элемент
-            if (streakElement && data.new_streak) {
-                streakElement.textContent = data.new_streak + ' дней';
-            } else if (streakElement) {
-                streakElement.textContent = (currentStreak + 1) + ' дней';
-            }
-
-            showNotification('Привычка отмечена как выполненная!', 'success');
-
-            const statusFilter = document.getElementById('habit-status-filter');
-            const isActiveHabitsView = window.location.pathname.startsWith('/habits')
-                && statusFilter
-                && statusFilter.value === 'todays';
-
-            if (isActiveHabitsView) {
-                setTimeout(() => {
-                    habitCard.remove();
-                }, 250);
+        checkbox.dataset.boundToggle = "1";
+        checkbox.addEventListener("change", async () => {
+            const taskId = checkbox.dataset.taskId || checkbox.closest("[data-task-id]")?.dataset.taskId;
+            if (!taskId) {
                 return;
             }
 
-            // Через секунду делаем кнопку неактивной
-            setTimeout(() => {
-                button.disabled = true;
-                button.title = 'Уже выполнено сегодня';
-            }, 1000);
+            const endpoint = checkbox.checked
+                ? `/tasks/${taskId}/complete`
+                : `/tasks/${taskId}/incomplete`;
+            checkbox.disabled = true;
 
-        } else {
-            // Возвращаем исходное состояние
-            button.innerHTML = originalText;
-            button.className = originalClass;
-            button.style.backgroundColor = originalBgColor;
-            button.disabled = false;
+            try {
+                const response = await fetch(endpoint, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": window.HabitFlowUI.getCsrfToken(),
+                    },
+                    credentials: "same-origin",
+                });
 
-            showNotification(data.error || 'Ошибка при выполнении привычки', 'error');
-        }
-    } catch (error) {
-        console.error('Error marking habit as completed:', error);
-
-        // Возвращаем исходное состояние
-        button.innerHTML = originalText;
-        button.className = originalClass;
-        button.style.backgroundColor = originalBgColor;
-        button.disabled = false;
-
-        showNotification('Ошибка соединения с сервером', 'error');
-    }
-}
-
-// Функция для удаления задачи (добавлена для кнопок удаления в tasks_list.html)
-async function deleteTask(taskId) {
-    if (!confirm('Вы уверены, что хотите удалить эту задачу?')) return;
-
-    const taskItem = document.querySelector(`[data-task-id="${taskId}"]`);
-    const wasActive = taskItem && !isTaskCompletedValue(taskItem.dataset.completed);
-
-    try {
-        if (taskItem) {
-            taskItem.style.opacity = '0.5';
-            taskItem.style.pointerEvents = 'none';
-        }
-
-        const response = await fetch(`/tasks/${taskId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
-            }
-        });
-
-        if (response.ok) { // или response.status === 200
-            showNotification('Задача удалена', 'success');
-
-            if (taskItem) {
-                taskItem.remove();
-                if (wasActive) {
-                    const activeEl = document.getElementById('stat-active-tasks');
-                    if (activeEl) {
-                        activeTasksCount = parseCounter(activeEl.textContent, activeTasksCount);
-                        activeTasksCount = Math.max(0, activeTasksCount - 1);
-                        activeEl.textContent = activeTasksCount;
-                    }
+                if (!response.ok) {
+                    throw new Error("Task toggle failed");
                 }
+
+                window.HabitFlowUI.showNotification(
+                    checkbox.checked ? "Задача выполнена" : "Задача возвращена в активные",
+                    "success"
+                );
+                await window.HabitFlowUI.navigate(window.location.href, {
+                    replace: true,
+                    preserveScroll: true,
+                });
+            } catch (error) {
+                console.error(error);
+                checkbox.checked = !checkbox.checked;
+                window.HabitFlowUI.showNotification("Не удалось обновить задачу", "error");
+                checkbox.disabled = false;
             }
+        });
+    });
 
-        } else {
-            showNotification('Ошибка при удалении задачи', 'error');
-            if (taskItem) {
-                taskItem.style.opacity = '';
-                taskItem.style.pointerEvents = '';
-            }
-        }
-    } catch (error) {
-        console.error('Error deleting task:', error);
-        showNotification('Ошибка соединения с сервером', 'error');
-        if (taskItem) {
-            taskItem.style.opacity = '';
-            taskItem.style.pointerEvents = '';
-        }
-    }
-}
-
-// Вспомогательные функции
-function showLoading(element) {
-    const spinner = document.createElement('span');
-    spinner.className = 'loading-spinner';
-    spinner.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-    if (element.parentElement) {
-        element.parentElement.appendChild(spinner);
-    }
-
-    element.disabled = true;
-}
-
-function hideLoading(element) {
-    const spinner = element.parentElement.querySelector('.loading-spinner');
-    if (spinner) {
-        spinner.remove();
-    }
-
-    element.disabled = false;
-}
-
-function showNotification(message, type = 'info') {
-    // Проверяем, есть ли уже контейнер для уведомлений
-    let container = document.querySelector('.notification-container');
-
-    if (!container) {
-        container = document.createElement('div');
-        container.className = 'notification-container';
-        document.body.appendChild(container);
-    }
-
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
-        <div class="notification-icon">
-            <i class="fas fa-${getNotificationIcon(type)}"></i>
-        </div>
-        <div class="notification-content">${message}</div>
-        <button class="notification-close" onclick="this.parentElement.remove()">
-            <i class="fas fa-times"></i>
-        </button>
-    `;
-
-    container.appendChild(notification);
-
-    // Автоматическое удаление через 5 секунд
-    setTimeout(() => {
-        if (notification.parentElement) {
-            notification.remove();
-        }
-    }, 5000);
-}
-
-function getNotificationIcon(type) {
-    switch (type) {
-        case 'success': return 'check-circle';
-        case 'error': return 'exclamation-circle';
-        case 'warning': return 'exclamation-triangle';
-        default: return 'info-circle';
-    }
-}
-
-function getCsrfToken() {
-    // Django CSRF token
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-    if (csrfToken) {
-        return csrfToken.value;
-    }
-
-    // Meta tag CSRF token
-    const metaToken = document.querySelector('meta[name="csrf-token"]');
-    if (metaToken) {
-        return metaToken.getAttribute('content');
-    }
-
-    // Flask WTForms CSRF token
-    const flaskToken = document.querySelector('[name="csrf_token"]');
-    if (flaskToken) {
-        return flaskToken.value;
-    }
-
-    // Input hidden CSRF token
-    const inputToken = document.querySelector('input[name="_csrf_token"]');
-    if (inputToken) {
-        return inputToken.value;
-    }
-
-    console.warn('CSRF token not found!');
-    return '';
-}
-
-function initializeEditDeleteHandlers() {
-    // Обработчики для кнопок удаления (редактирование остаётся на обычных ссылках)
-    const deleteButtons = document.querySelectorAll('.btn-task-delete');
-    deleteButtons.forEach(button => {
-        if (button.dataset.boundDeleteTask === '1') {
+    root.querySelectorAll(".btn-habit-complete").forEach((button) => {
+        if (button.dataset.boundHabitComplete === "1" || button.disabled) {
             return;
         }
-        button.dataset.boundDeleteTask = '1';
+        button.dataset.boundHabitComplete = "1";
+        button.addEventListener("click", async () => {
+            const habitId = button.dataset.habitId;
+            if (!habitId) {
+                return;
+            }
+            button.disabled = true;
 
-        // Удаляем старый обработчик onclick, если он есть
-        button.removeAttribute('onclick');
+            try {
+                const response = await fetch(`/habits/${habitId}/complete`, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": window.HabitFlowUI.getCsrfToken(),
+                    },
+                    credentials: "same-origin",
+                });
 
-        button.addEventListener('click', function() {
-            const taskId = this.dataset.taskId || this.closest('.task-item').dataset.taskId;
-            if (taskId) {
-                deleteTask(taskId);
+                if (!response.ok) {
+                    throw new Error("Habit complete failed");
+                }
+
+                window.HabitFlowUI.showNotification("Привычка отмечена как выполненная", "success");
+                await window.HabitFlowUI.navigate(window.location.href, {
+                    replace: true,
+                    preserveScroll: true,
+                });
+            } catch (error) {
+                console.error(error);
+                window.HabitFlowUI.showNotification("Не удалось обновить привычку", "error");
+                button.disabled = false;
+            }
+        });
+    });
+
+    root.querySelectorAll(".btn-task-delete").forEach((button) => {
+        if (button.dataset.boundDeleteTask === "1") {
+            return;
+        }
+        button.dataset.boundDeleteTask = "1";
+        button.addEventListener("click", async () => {
+            const taskId = button.dataset.taskId;
+            if (!taskId || !window.confirm("Удалить эту задачу?")) {
+                return;
+            }
+            button.disabled = true;
+
+            try {
+                const response = await fetch(`/tasks/${taskId}`, {
+                    method: "DELETE",
+                    headers: {
+                        "X-CSRFToken": window.HabitFlowUI.getCsrfToken(),
+                    },
+                    credentials: "same-origin",
+                });
+                if (response.status !== 204) {
+                    throw new Error("Task delete failed");
+                }
+                window.HabitFlowUI.showNotification("Задача удалена", "success");
+                await window.HabitFlowUI.navigate(window.location.href, {
+                    replace: true,
+                    preserveScroll: true,
+                });
+            } catch (error) {
+                console.error(error);
+                window.HabitFlowUI.showNotification("Не удалось удалить задачу", "error");
+                button.disabled = false;
             }
         });
     });
 }
 
-function addNotificationStyles() {
-    const style = document.createElement('style');
-    style.textContent = `
-        .notification-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            max-width: 350px;
-        }
-
-        .notification {
-            background: white;
-            border-radius: 8px;
-            padding: 15px 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            animation: slideIn 0.3s ease-out;
-            border-left: 4px solid;
-        }
-
-        .notification-success {
-            border-left-color: #2ecc71;
-        }
-
-        .notification-error {
-            border-left-color: #e74c3c;
-        }
-
-        .notification-warning {
-            border-left-color: #f39c12;
-        }
-
-        .notification-info {
-            border-left-color: #3498db;
-        }
-
-        .notification-icon {
-            font-size: 1.2rem;
-        }
-
-        .notification-success .notification-icon {
-            color: #2ecc71;
-        }
-
-        .notification-error .notification-icon {
-            color: #e74c3c;
-        }
-
-        .notification-warning .notification-icon {
-            color: #f39c12;
-        }
-
-        .notification-info .notification-icon {
-            color: #3498db;
-        }
-
-        .notification-content {
-            flex: 1;
-            color: #333;
-            font-size: 0.95rem;
-        }
-
-        .notification-close {
-            background: none;
-            border: none;
-            color: #95a5a6;
-            cursor: pointer;
-            padding: 5px;
-            font-size: 0.9rem;
-        }
-
-        .notification-close:hover {
-            color: #e74c3c;
-        }
-
-        .loading-spinner {
-            margin-left: 10px;
-            color: #3498db;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-    `;
-    document.head.appendChild(style);
-}
+window.HabitFlowUI.registerInit(initMainPageInteractions);

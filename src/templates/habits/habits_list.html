@@ -6,60 +6,65 @@
 {% set current_order = request.query_params.get('order', 'desc') %}
 
 {% block title %}Привычки - HabitFlow{% endblock %}
-
-{% block page_icon %}<i class="fas fa-sync-alt"></i>{% endblock %}
+{% block page_icon %}<i class="fa-solid fa-arrow-trend-up"></i>{% endblock %}
 {% block page_title %}Привычки{% endblock %}
+{% block page_lead %}Следите за сериями и дневным статусом без лишних переходов по страницам.{% endblock %}
 {% block create_url %}/habits/new{% endblock %}
 {% block create_button_text %}Добавить привычку{% endblock %}
 
 {% block filters %}
-<div class="filters-container habits-filters">
-    <div class="filter-group">
-        <label for="habit-status-filter"><i class="fas fa-check-circle"></i> Статус:</label>
-        <select id="habit-status-filter" class="form-control">
-            <option value="todays" {% if current_status == 'todays' %}selected{% endif %}>Сегодня</option>
-            <option value="active" {% if current_status == 'active' %}selected{% endif %}>Активные</option>
-            <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Выполненные</option>
-            <option value="archived" {% if current_status == 'archived' %}selected{% endif %}>Архив</option>
-        </select>
-    </div>
+<section class="surface-card filter-card">
+    <form id="habits-filters-form" data-filter-form="habits">
+        <div class="filters-grid habits">
+            <div class="filter-field">
+                <label class="filter-label" for="habit-status-filter">Статус</label>
+                <select id="habit-status-filter" class="select-control" name="status">
+                    <option value="todays" {% if current_status == 'todays' %}selected{% endif %}>Сегодня</option>
+                    <option value="active" {% if current_status == 'active' %}selected{% endif %}>Активные</option>
+                    <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Выполненные</option>
+                    <option value="archived" {% if current_status == 'archived' %}selected{% endif %}>Архив</option>
+                </select>
+            </div>
 
-    <div class="filter-group">
-        <label for="habit-schedule-filter"><i class="fas fa-calendar-alt"></i> Периодичность:</label>
-        <select id="habit-schedule-filter" class="form-control">
-            <option value="all" {% if current_schedule_type == 'all' %}selected{% endif %}>Все</option>
-            <option value="daily" {% if current_schedule_type == 'daily' %}selected{% endif %}>Ежедневно</option>
-            <option value="weekly_days" {% if current_schedule_type == 'weekly_days' %}selected{% endif %}>Дни недели</option>
-            <option value="monthly_day" {% if current_schedule_type == 'monthly_day' %}selected{% endif %}>День месяца</option>
-            <option value="yearly_date" {% if current_schedule_type == 'yearly_date' %}selected{% endif %}>Дата года</option>
-            <option value="interval_cycle" {% if current_schedule_type == 'interval_cycle' %}selected{% endif %}>Интервальное</option>
-        </select>
-    </div>
+            <div class="filter-field">
+                <label class="filter-label" for="habit-schedule-filter">Периодичность</label>
+                <select id="habit-schedule-filter" class="select-control" name="schedule_type">
+                    <option value="all" {% if current_schedule_type == 'all' %}selected{% endif %}>Все</option>
+                    <option value="daily" {% if current_schedule_type == 'daily' %}selected{% endif %}>Ежедневно</option>
+                    <option value="weekly_days" {% if current_schedule_type == 'weekly_days' %}selected{% endif %}>Дни недели</option>
+                    <option value="monthly_day" {% if current_schedule_type == 'monthly_day' %}selected{% endif %}>День месяца</option>
+                    <option value="yearly_date" {% if current_schedule_type == 'yearly_date' %}selected{% endif %}>Дата года</option>
+                    <option value="interval_cycle" {% if current_schedule_type == 'interval_cycle' %}selected{% endif %}>Интервал</option>
+                </select>
+            </div>
 
-    <div class="filter-group">
-        <label for="sort-habits"><i class="fas fa-sort"></i> Сортировка:</label>
-        <select id="sort-habits" class="form-control">
-            <option value="created_at" {% if current_sort == 'created_at' %}selected{% endif %}>По дате создания</option>
-            <option value="updated_at" {% if current_sort == 'updated_at' %}selected{% endif %}>По дате обновления</option>
-            <option value="name" {% if current_sort == 'name' %}selected{% endif %}>По названию</option>
-            <option value="streak" {% if current_sort == 'streak' %}selected{% endif %}>По серии</option>
-        </select>
-    </div>
+            <div class="filter-field">
+                <label class="filter-label" for="sort-habits">Сортировка</label>
+                <select id="sort-habits" class="select-control" name="sort">
+                    <option value="created_at" {% if current_sort == 'created_at' %}selected{% endif %}>По дате создания</option>
+                    <option value="updated_at" {% if current_sort == 'updated_at' %}selected{% endif %}>По дате обновления</option>
+                    <option value="name" {% if current_sort == 'name' %}selected{% endif %}>По названию</option>
+                    <option value="streak" {% if current_sort == 'streak' %}selected{% endif %}>По серии</option>
+                </select>
+            </div>
 
-    <div class="filter-group filter-group-order">
-        <label><i class="fas fa-sort-amount-down"></i> Порядок:</label>
-        <div class="sort-order-buttons">
-            <button id="habit-sort-asc" class="btn-order {% if current_order == 'asc' %}active{% endif %}" data-order="asc" title="По возрастанию">
-                <i class="fas fa-sort-amount-up"></i>
-                <span>Возрастание</span>
-            </button>
-            <button id="habit-sort-desc" class="btn-order {% if current_order == 'desc' %}active{% endif %}" data-order="desc" title="По убыванию">
-                <i class="fas fa-sort-amount-down"></i>
-                <span>Убывание</span>
-            </button>
+            <div class="filter-field">
+                <span class="filter-label">Порядок</span>
+                <input type="hidden" id="habits-order-input" name="order" value="{{ current_order }}">
+                <div class="order-toggle">
+                    <button type="button" id="habit-sort-asc" class="btn-order {% if current_order == 'asc' %}active{% endif %}" data-order="asc">
+                        <i class="fa-solid fa-arrow-up-wide-short"></i>
+                        Возрастание
+                    </button>
+                    <button type="button" id="habit-sort-desc" class="btn-order {% if current_order == 'desc' %}active{% endif %}" data-order="desc">
+                        <i class="fa-solid fa-arrow-down-wide-short"></i>
+                        Убывание
+                    </button>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
+    </form>
+</section>
 {% endblock %}
 
 {% block list_content %}
@@ -69,110 +74,105 @@
         {% set cfg = habit.schedule_config or {} %}
         {% set weekday_labels = {"mon": "Пн", "tue": "Вт", "wed": "Ср", "thu": "Чт", "fri": "Пт", "sat": "Сб", "sun": "Вс"} %}
         {% set progress = habit.progress_percent %}
-        <div class="habit-card {% if habit.is_archived %}is-archived{% elif habit.completed_today %}is-completed{% else %}is-active{% endif %} {% if not habit.ends_on %}no-progress{% endif %}" data-habit-id="{{ habit.id }}">
-            <div class="habit-card-top">
-                <div class="habit-main">
-                    <h3 class="habit-title">{{ habit.name }}</h3>
-                    {% if habit.description %}
-                    <p class="habit-description">{{ habit.description }}</p>
-                    {% endif %}
-                </div>
-                <span class="habit-streak">{{ habit.current_streak }} дн.</span>
-            </div>
+        <article class="surface-card habit-card {% if habit.is_archived %}is-archived{% elif habit.completed_today %}is-completed{% endif %}" data-habit-id="{{ habit.id }}" style="--habit-theme-color: {{ habit.theme_color or '#8a90a8' }};">
+            <div class="habit-card-inner">
+                <span class="habit-card-accent"></span>
+                <div class="habit-card-body">
+                    <div class="habit-card-top">
+                        <div class="habit-main">
+                            <h3 class="habit-title">{{ habit.name }}</h3>
+                            {% if habit.description %}
+                            <p class="habit-description">{{ habit.description }}</p>
+                            {% endif %}
+                        </div>
+                        <span class="habit-streak"><i class="fa-solid fa-fire-flame-curved"></i> {{ habit.current_streak }} дн.</span>
+                    </div>
 
-            <div class="habit-tags">
-                {% if habit.theme_name %}
-                <span class="habit-chip habit-chip-theme" style="background-color: {{ habit.theme_color }}20; color: {{ habit.theme_color }}; border: 1px solid {{ habit.theme_color }}40;">
-                    <i class="fas fa-tag"></i>{{ habit.theme_name }}
-                </span>
-                {% endif %}
-
-                {% if habit.schedule_type == "daily" %}
-                <span class="habit-chip habit-chip-schedule"><i class="fas fa-calendar-day"></i>Ежедневно</span>
-                {% elif habit.schedule_type == "weekly_days" %}
-                {% set days_ns = namespace(values=[]) %}
-                {% for day in cfg.get("days", []) %}
-                    {% set days_ns.values = days_ns.values + [weekday_labels.get(day, day)] %}
-                {% endfor %}
-                <span class="habit-chip habit-chip-schedule">
-                    <i class="fas fa-calendar-week"></i>Дни: {{ days_ns.values|join(", ") }}
-                </span>
-                {% elif habit.schedule_type == "monthly_day" %}
-                <span class="habit-chip habit-chip-schedule"><i class="fas fa-calendar"></i>{{ cfg.get("day") }} число</span>
-                {% elif habit.schedule_type == "yearly_date" %}
-                <span class="habit-chip habit-chip-schedule">
-                    <i class="fas fa-calendar-alt"></i>{{ cfg.get("day") }}.{{ cfg.get("month") }}
-                </span>
-                {% elif habit.schedule_type == "interval_cycle" %}
-                <span class="habit-chip habit-chip-schedule">
-                    <i class="fas fa-repeat"></i>Интервальное: {{ cfg.get("active_days") }}/{{ cfg.get("break_days") }}
-                </span>
-                {% endif %}
-
-                {% if habit.is_archived %}
-                <span class="habit-chip habit-chip-status habit-chip-status-archived"><i class="fas fa-archive"></i>Архив</span>
-                {% elif habit.completed_today %}
-                <span class="habit-chip habit-chip-status habit-chip-status-done"><i class="fas fa-check-circle"></i>Выполнено сегодня</span>
-                {% endif %}
-
-                {% if habit.starts_on or habit.ends_on %}
-                <span class="habit-chip habit-chip-period">
-                    <i class="fas fa-hourglass-half"></i>
-                    {{ habit.starts_on if habit.starts_on else "без начала" }} -
-                    {{ habit.ends_on if habit.ends_on else "бесконечно" }}
-                </span>
-                {% endif %}
-            </div>
-
-            {% if habit.ends_on %}
-            <div class="habit-progress">
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: {{ '%.2f'|format(progress) }}%"></div>
-                </div>
-                <span class="habit-progress-value">{{ '%.2f'|format(progress) }}%</span>
-            </div>
-            {% endif %}
-
-            <div class="habit-actions">
-                <a href="/habits/{{ habit.id }}"
-                    class="btn btn-outline btn-sm btn-habit-edit"
-                    title="Редактировать">
-                    <i class="fas fa-edit"></i>
-                    <span>Редактировать</span>
-                </a>
-                <button class="btn btn-outline btn-sm btn-habit-complete {% if habit.is_archived or habit.completed_today or not habit.due_today %}completed{% endif %}"
-                        data-habit-id="{{ habit.id }}"
-                        {% if habit.is_archived or habit.completed_today or not habit.due_today %}disabled{% endif %}
-                        title="Отметить выполнение">
-                    <i class="fas fa-check"></i>
-                    <span>
-                        {% if habit.is_archived %}
-                            В архиве
-                        {% elif habit.completed_today %}
-                            Выполнено
-                        {% elif not habit.due_today %}
-                            Не на сегодня
-                        {% else %}
-                            Сделано сегодня
+                    <div class="habit-tags">
+                        {% if habit.theme_name %}
+                        <span class="tag habit-chip-theme">{{ habit.theme_name }}</span>
                         {% endif %}
-                    </span>
-                </button>
-                <button class="btn btn-outline btn-sm btn-habit-delete"
-                        data-habit-id="{{ habit.id }}"
-                        title="Удалить"
-                        aria-label="Удалить привычку">
-                    <i class="fas fa-trash"></i>
-                </button>
+
+                        {% if habit.schedule_type == "daily" %}
+                        <span class="tag habit-chip-schedule"><i class="fa-solid fa-calendar-day"></i> Ежедневно</span>
+                        {% elif habit.schedule_type == "weekly_days" %}
+                        {% set days_ns = namespace(values=[]) %}
+                        {% for day in cfg.get("days", []) %}
+                            {% set days_ns.values = days_ns.values + [weekday_labels.get(day, day)] %}
+                        {% endfor %}
+                        <span class="tag habit-chip-schedule"><i class="fa-solid fa-calendar-week"></i> {{ days_ns.values|join(", ") }}</span>
+                        {% elif habit.schedule_type == "monthly_day" %}
+                        <span class="tag habit-chip-schedule"><i class="fa-solid fa-calendar-days"></i> {{ cfg.get("day") }} число</span>
+                        {% elif habit.schedule_type == "yearly_date" %}
+                        <span class="tag habit-chip-schedule"><i class="fa-solid fa-calendar"></i> {{ cfg.get("day") }}.{{ cfg.get("month") }}</span>
+                        {% else %}
+                        <span class="tag habit-chip-schedule"><i class="fa-solid fa-repeat"></i> {{ cfg.get("active_days") }}/{{ cfg.get("break_days") }}</span>
+                        {% endif %}
+
+                        {% if habit.is_archived %}
+                        <span class="tag habit-chip-status habit-chip-status-archived"><i class="fa-solid fa-box-archive"></i> Архив</span>
+                        {% elif habit.completed_today %}
+                        <span class="tag habit-chip-status"><i class="fa-solid fa-check"></i> Выполнено сегодня</span>
+                        {% endif %}
+
+                        {% if habit.starts_on or habit.ends_on %}
+                        <span class="tag habit-chip-period">
+                            <i class="fa-regular fa-calendar"></i>
+                            {{ habit.starts_on if habit.starts_on else "без начала" }} - {{ habit.ends_on if habit.ends_on else "бесконечно" }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="habit-progress">
+                        <div class="progress-bar">
+                            <span class="progress-fill" style="width: {{ '%.2f'|format(progress) }}%;"></span>
+                        </div>
+                        <span class="habit-progress-value">Прогресс периода: {{ '%.2f'|format(progress) }}%</span>
+                    </div>
+
+                    <div class="habit-actions">
+                        <div class="habit-actions-group">
+                            <a href="/habits/{{ habit.id }}" class="btn btn-outline btn-sm btn-habit-edit" data-enhanced-nav="true">
+                                <i class="fa-regular fa-pen-to-square"></i>
+                                Изменить
+                            </a>
+                            <button class="btn btn-danger btn-sm btn-habit-delete" data-habit-id="{{ habit.id }}">
+                                <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                        </div>
+                        <div class="habit-actions-group">
+                            <button
+                                class="btn btn-success btn-sm btn-habit-complete {% if habit.is_archived or habit.completed_today or not habit.due_today %}completed{% endif %}"
+                                data-habit-id="{{ habit.id }}"
+                                {% if habit.is_archived or habit.completed_today or not habit.due_today %}disabled{% endif %}
+                            >
+                                <i class="fa-solid fa-check"></i>
+                                <span>
+                                    {% if habit.is_archived %}
+                                        В архиве
+                                    {% elif habit.completed_today %}
+                                        Сделано сегодня
+                                    {% elif not habit.due_today %}
+                                        Не на сегодня
+                                    {% else %}
+                                        Выполнить
+                                    {% endif %}
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
+        </article>
         {% endfor %}
     {% else %}
-    <div class="empty-state">
-        <i class="fas fa-sync-alt"></i>
+    <div class="empty-state centered">
+        <span class="empty-state-icon"><i class="fa-solid fa-seedling"></i></span>
         <h3>Привычки не найдены</h3>
-        <p>Добавьте первую привычку и начните отслеживание серии</p>
-        <a href="/habits/new" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Добавить привычку
+        <p>Добавьте первую привычку и начните собирать серию с живым дневным статусом.</p>
+        <a href="/habits/new" class="btn btn-primary" data-enhanced-nav="true">
+            <i class="fa-solid fa-plus"></i>
+            Добавить привычку
         </a>
     </div>
     {% endif %}
@@ -186,90 +186,38 @@
     {% endif %}
 {% endfor %}
 {% set pagination_base_query = pagination_base.parts|join('&') %}
-
 {% set pagination_base_url = request.url.path %}
 {% if pagination_base_query %}
     {% set pagination_base_url = request.url.path ~ '?' ~ pagination_base_query %}
 {% endif %}
 
 <div id="habits-pagination" class="tasks-pagination">
-    <div class="tasks-pagination-controls">
+    <div class="tasks-pagination-controls pagination">
         {% set prev_page = habits_page - 1 %}
         {% if habits_has_prev %}
             {% if prev_page <= 1 %}
                 {% set prev_url = pagination_base_url %}
             {% else %}
-                {% set prev_url = pagination_base_query
-                    and (request.url.path ~ '?' ~ pagination_base_query ~ '&page=' ~ prev_page)
-                    or (request.url.path ~ '?page=' ~ prev_page) %}
+                {% set prev_url = pagination_base_query and (request.url.path ~ '?' ~ pagination_base_query ~ '&page=' ~ prev_page) or (request.url.path ~ '?page=' ~ prev_page) %}
             {% endif %}
-            <a
-                class="btn btn-outline btn-sm tasks-page-btn"
-                href="{{ prev_url }}"
-            >
-                Назад
-            </a>
-            {% set show_prev_number = True %}
+            <a class="page-link" href="{{ prev_url }}" data-enhanced-nav="true">Назад</a>
+            <a class="page-link" href="{{ prev_url }}" data-enhanced-nav="true">{{ prev_page }}</a>
         {% else %}
-            <span class="btn btn-outline btn-sm tasks-page-btn disabled" aria-disabled="true">
-                Назад
-            </span>
-            {% set show_prev_number = False %}
+            <span class="page-link disabled">Назад</span>
         {% endif %}
 
-        {% if show_prev_number %}
-            <a
-                class="btn btn-outline btn-sm tasks-page-btn"
-                href="{{ prev_url }}"
-            >
-                {{ prev_page }}
-            </a>
-        {% endif %}
-
-        <span class="btn btn-outline btn-sm tasks-page-btn active" aria-current="page">
-            {{ habits_page }}
-        </span>
+        <span class="page-link active">{{ habits_page }}</span>
 
         {% if habits_has_next %}
             {% set next_page = habits_page + 1 %}
-            {% if next_page <= 1 %}
-                {% set next_url = pagination_base_url %}
-            {% else %}
-                {% set next_url = pagination_base_query
-                    and (request.url.path ~ '?' ~ pagination_base_query ~ '&page=' ~ next_page)
-                    or (request.url.path ~ '?page=' ~ next_page) %}
-            {% endif %}
-            <a
-                class="btn btn-outline btn-sm tasks-page-btn"
-                href="{{ next_url }}"
-            >
-                {{ next_page }}
-            </a>
-        {% endif %}
-
-        {% if habits_has_next %}
-            <a
-                class="btn btn-outline btn-sm tasks-page-btn"
-                href="{{ next_url }}"
-            >
-                Вперёд
-            </a>
+            {% set next_url = pagination_base_query and (request.url.path ~ '?' ~ pagination_base_query ~ '&page=' ~ next_page) or (request.url.path ~ '?page=' ~ next_page) %}
+            <a class="page-link" href="{{ next_url }}" data-enhanced-nav="true">{{ next_page }}</a>
+            <a class="page-link" href="{{ next_url }}" data-enhanced-nav="true">Вперёд</a>
         {% else %}
-            <span class="btn btn-outline btn-sm tasks-page-btn disabled" aria-disabled="true">
-                Вперёд
-            </span>
+            <span class="page-link disabled">Вперёд</span>
         {% endif %}
     </div>
-
-    <div class="tasks-pagination-info">
-        {% if habits_total_pages > 0 %}
-            Страница {{ habits_page }} из {{ habits_total_pages }}
-        {% else %}
-            Страница {{ habits_page }}
-        {% endif %}
-    </div>
+    <div class="tasks-pagination-info">Страница {{ habits_page }}{% if habits_total_pages > 0 %} из {{ habits_total_pages }}{% endif %}</div>
 </div>
 {% endif %}
-
-<script src="{{ url_for('static', path='/js/list_habits.js') }}"></script>
 {% endblock %}

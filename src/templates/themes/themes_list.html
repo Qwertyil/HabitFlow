@@ -1,11 +1,10 @@
 {% extends "base_list.html" %}
 {% import "macroses.html" as plural %}
 
-
 {% block title %}Темы - HabitFlow{% endblock %}
-
-{% block page_icon %}<i class="fas fa-tags"></i>{% endblock %}
+{% block page_icon %}<i class="fa-solid fa-palette"></i>{% endblock %}
 {% block page_title %}Мои темы{% endblock %}
+{% block page_lead %}Темы остаются отдельным слоем навигации и фильтрации по всему приложению.{% endblock %}
 {% block create_url %}/themes/new{% endblock %}
 {% block create_button_text %}Добавить тему{% endblock %}
 
@@ -13,90 +12,70 @@
 <div class="themes-grid">
     {% for theme in themes_list %}
         {% if theme.name != 'Все темы' %}
-        <div class="theme-card" data-theme-id="{{ theme.id }}" data-theme-name="{{ theme.name }}">
-            <div class="theme-header">
-                <div class="theme-color" style="background-color: {{ theme.color }};"></div>
-                <h3>{{ theme.name }}</h3>
+        <article class="surface-card theme-card" data-theme-id="{{ theme.id }}" data-theme-name="{{ theme.name }}" style="--theme-color: {{ theme.color }};">
+            <div class="theme-card-topbar"></div>
+            <div class="theme-card-body">
+                <div class="theme-header">
+                    <span class="theme-avatar">{{ theme.name[:1]|upper }}</span>
+                    <div>
+                        <h3 class="theme-title">{{ theme.name }}</h3>
+                    </div>
+                </div>
+                <div class="theme-counts">
+                    <span class="tag theme-count"><i class="fa-regular fa-circle-check"></i> <strong>{{ theme.tasks_count }}</strong> {{ plural.pluralize(theme.tasks_count, 'задача', 'задачи', 'задач') }}</span>
+                    <span class="tag theme-count"><i class="fa-solid fa-arrow-trend-up"></i> <strong>{{ theme.habits_count }}</strong> {{ plural.pluralize(theme.habits_count, 'привычка', 'привычки', 'привычек') }}</span>
+                </div>
+                <div class="theme-actions">
+                    <a href="/themes/{{ theme.id }}" class="btn btn-outline btn-sm" data-enhanced-nav="true">
+                        <i class="fa-regular fa-pen-to-square"></i>
+                        Изменить
+                    </a>
+                    <button class="btn btn-danger btn-sm btn-theme-delete" data-theme-id="{{ theme.id }}">
+                        <i class="fa-regular fa-trash-can"></i>
+                        Удалить
+                    </button>
+                </div>
             </div>
-            <div class="theme-stats">
-                <span class="stat">{{ theme.tasks_count }} {{ plural.pluralize(theme.tasks_count, 'задача', 'задачи', 'задач') }}</span>
-                <span class="stat">{{ theme.habits_count }} {{ plural.pluralize(theme.habits_count, 'привычка', 'привычки', 'привычек') }}</span>
-            </div>
-            <div class="theme-actions">
-                <button class="btn btn-outline btn-sm" onclick='editTheme({{ theme.id|string|tojson }})'>
-                    <i class="fas fa-edit"></i> Изменить
-                </button>
-                <button class="btn btn-danger btn-sm" onclick='deleteTheme({{ theme.id|string|tojson }})'>
-                    <i class="fas fa-trash"></i> Удалить
-                </button>
-            </div>
-        </div>
+        </article>
         {% endif %}
     {% endfor %}
 
-    {% if not themes_list %}
-    <div class="empty-state">
-        <i class="fas fa-tags fa-3x"></i>
-        <h3>Темы не найдены</h3>
-        <p>Создайте свою первую тему для организации задач и привычек</p>
-    </div>
-    {% endif %}
+    <a href="/themes/new" class="theme-card-new" data-enhanced-nav="true">
+        <div>
+            <i class="fa-solid fa-plus"></i>
+            <div>Добавить тему</div>
+        </div>
+    </a>
 </div>
-{% if themes_has_prev or themes_has_next %}
-<div class="tasks-pagination">
-    <div class="tasks-pagination-controls">
-        {% if themes_has_prev %}
-        <a
-            class="btn btn-outline btn-sm tasks-page-btn"
-            href="?page={{ themes_page - 1 }}&per_page={{ themes_per_page }}"
-        >
-            Назад
-        </a>
-        {% else %}
-        <span class="btn btn-outline btn-sm tasks-page-btn disabled" aria-disabled="true">
-            Назад
-        </span>
-        {% endif %}
 
-        {% if themes_has_prev %}
-        <a
-            class="btn btn-outline btn-sm tasks-page-btn"
-            href="?page={{ themes_page - 1 }}&per_page={{ themes_per_page }}"
-        >
-            {{ themes_page - 1 }}
-        </a>
-        {% endif %}
-
-        <span class="btn btn-outline btn-sm tasks-page-btn active" aria-current="page">
-            {{ themes_page }}
-        </span>
-
-        {% if themes_has_next %}
-        <a
-            class="btn btn-outline btn-sm tasks-page-btn"
-            href="?page={{ themes_page + 1 }}&per_page={{ themes_per_page }}"
-        >
-            {{ themes_page + 1 }}
-        </a>
-        {% endif %}
-
-        {% if themes_has_next %}
-        <a
-            class="btn btn-outline btn-sm tasks-page-btn"
-            href="?page={{ themes_page + 1 }}&per_page={{ themes_per_page }}"
-        >
-            Вперёд
-        </a>
-        {% else %}
-        <span class="btn btn-outline btn-sm tasks-page-btn disabled" aria-disabled="true">
-            Вперёд
-        </span>
-        {% endif %}
-    </div>
-    <div class="tasks-pagination-info">
-        Страница {{ themes_page }} из {{ themes_total_pages }}
-    </div>
+{% if not themes_list %}
+<div class="empty-state centered">
+    <span class="empty-state-icon"><i class="fa-solid fa-palette"></i></span>
+    <h3>Темы не найдены</h3>
+    <p>Создайте первую тему, чтобы задачам и привычкам было проще жить в одном ритме.</p>
 </div>
 {% endif %}
-<script src="{{ url_for('static', path='/js/list_themes.js') }}"></script>
+
+{% if themes_has_prev or themes_has_next %}
+<div class="tasks-pagination">
+    <div class="tasks-pagination-controls pagination">
+        {% if themes_has_prev %}
+        <a class="page-link" href="?page={{ themes_page - 1 }}&per_page={{ themes_per_page }}" data-enhanced-nav="true">Назад</a>
+        <a class="page-link" href="?page={{ themes_page - 1 }}&per_page={{ themes_per_page }}" data-enhanced-nav="true">{{ themes_page - 1 }}</a>
+        {% else %}
+        <span class="page-link disabled">Назад</span>
+        {% endif %}
+
+        <span class="page-link active">{{ themes_page }}</span>
+
+        {% if themes_has_next %}
+        <a class="page-link" href="?page={{ themes_page + 1 }}&per_page={{ themes_per_page }}" data-enhanced-nav="true">{{ themes_page + 1 }}</a>
+        <a class="page-link" href="?page={{ themes_page + 1 }}&per_page={{ themes_per_page }}" data-enhanced-nav="true">Вперёд</a>
+        {% else %}
+        <span class="page-link disabled">Вперёд</span>
+        {% endif %}
+    </div>
+    <div class="tasks-pagination-info">Страница {{ themes_page }} из {{ themes_total_pages }}</div>
+</div>
+{% endif %}
 {% endblock %}

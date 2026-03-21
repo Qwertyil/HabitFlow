@@ -1,206 +1,88 @@
-window.addEventListener('pageshow', function(event) {
-    initializeFormHandlers();
-});
-
-function initializeFormHandlers() {
-    // Обработка выбора типа цели для привычек
-    const submitButtons = document.querySelectorAll('button[type="submit"]');
-    submitButtons.forEach(btn => {
-        btn.disabled = false;
-        btn.classList.remove('btn-loading');
-    });
-
-    const goalTypeSelect = document.getElementById('goal_type');
-    const goalValueContainer = document.getElementById('goal-value-container');
-
-    if (goalTypeSelect && goalValueContainer) {
-        goalTypeSelect.addEventListener('change', function() {
-            if (this.value === 'completion') {
-                goalValueContainer.style.display = 'none';
-            } else {
-                goalValueContainer.style.display = 'block';
-
-                // Обновляем placeholder в зависимости от типа цели
-                const goalValueInput = document.getElementById('goal_value');
-                if (this.value === 'duration') {
-                    goalValueInput.placeholder = 'Например: 30 (минут)';
-                } else if (this.value === 'quantity') {
-                    goalValueInput.placeholder = 'Например: 5 (раз)';
-                }
-            }
-        });
+function showFormError(message) {
+    const form = document.querySelector(".item-form");
+    if (!form) {
+        return;
     }
 
-    // Валидация формы при отправке
-    const forms = document.querySelectorAll('.item-form');
-    forms.forEach(form => {
-        // PUT-формы обрабатываются в update.js, чтобы избежать двойного submit flow
-        const method = (form.dataset.method || form.getAttribute('method') || 'post').toLowerCase();
-        if (method === 'put') {
-            return;
-        }
-
-        form.addEventListener('submit', function(e) {
-            if (!validateForm(this)) {
-                e.preventDefault();
-                showFormError('Пожалуйста, заполните все обязательные поля правильно.');
-            } else {
-                // Показываем loading состояние
-                const submitBtn = this.querySelector('button[type="submit"]');
-                if (submitBtn) {
-                    submitBtn.classList.add('btn-loading');
-                    submitBtn.disabled = true;
-                }
-            }
-        });
-    });
-
-    // Валидация полей при изменении
-    const inputs = document.querySelectorAll('input, select, textarea');
-    inputs.forEach(input => {
-        input.addEventListener('blur', function() {
-            validateField(this);
-        });
-
-        input.addEventListener('input', function() {
-            // Убираем ошибку при вводе
-            const errorElement = this.parentNode.querySelector('.field-error');
-            if (errorElement && this.value.trim()) {
-                errorElement.remove();
-                this.classList.remove('error');
-            }
-        });
-    });
-
-    // Инициализация подсказок
-    initializeFieldHints();
-}
-
-function validateForm(form) {
-    let isValid = true;
-    const requiredFields = form.querySelectorAll('[required]');
-
-    requiredFields.forEach(field => {
-        if (!validateField(field)) {
-            isValid = false;
-        }
-    });
-
-    // Специфичная валидация для привычек (дни недели)
-    const scheduleCheckboxes = form.querySelectorAll('input[name="schedule"]:checked');
-    if (scheduleCheckboxes.length === 0 && form.action.includes('/new/habit')) {
-        const daysSelector = form.querySelector('.days-selector');
-        showFieldError(daysSelector, 'Выберите хотя бы один день');
-        isValid = false;
-    }
-
-    return isValid;
+    form.querySelectorAll(".form-error").forEach((error) => error.remove());
+    const errorElement = document.createElement("div");
+    errorElement.className = "form-error";
+    errorElement.textContent = message;
+    form.prepend(errorElement);
 }
 
 function validateField(field) {
-    const errorElement = field.parentNode.querySelector('.field-error');
+    const wrapper = field.closest(".form-group") || field.parentElement;
+    wrapper?.querySelectorAll(".field-error").forEach((error) => error.remove());
+    field.classList.remove("error");
 
-    // Убираем предыдущую ошибку
-    if (errorElement) {
-        errorElement.remove();
-    }
-
-    field.classList.remove('error');
-
-    // Проверка обязательных полей
-    if (field.hasAttribute('required') && !field.value.trim()) {
-        showFieldError(field, 'Заполните все обязательные поля');
+    if (field.hasAttribute("required") && !field.value.trim()) {
+        const error = document.createElement("div");
+        error.className = "field-error";
+        error.textContent = "Заполните обязательное поле.";
+        wrapper?.appendChild(error);
+        field.classList.add("error");
         return false;
     }
 
-    // Проверка email
-    if (field.type === 'email' && field.value && !isValidEmail(field.value)) {
-        showFieldError(field, 'Введите корректный email');
+    if (field.type === "email" && field.value && !field.validity.valid) {
+        const error = document.createElement("div");
+        error.className = "field-error";
+        error.textContent = "Введите корректный email.";
+        wrapper?.appendChild(error);
+        field.classList.add("error");
         return false;
-    }
-
-    // Проверка числовых полей
-    if (field.type === 'number') {
-        const min = field.getAttribute('min');
-        const max = field.getAttribute('max');
-
-        if (min && field.value && parseInt(field.value) < parseInt(min)) {
-            showFieldError(field, `Значение должно быть не меньше ${min}`);
-            return false;
-        }
-
-        if (max && field.value && parseInt(field.value) > parseInt(max)) {
-            showFieldError(field, `Значение должно быть не больше ${max}`);
-            return false;
-        }
     }
 
     return true;
 }
 
-function showFieldError(field, message) {
-    field.classList.add('error');
-
-    const errorElement = document.createElement('div');
-    errorElement.className = 'field-error';
-    errorElement.textContent = message;
-
-    field.parentNode.appendChild(errorElement);
-}
-
-function showFormError(message) {
-    // Удаляем предыдущие ошибки
-    const existingErrors = document.querySelectorAll('.form-error');
-    existingErrors.forEach(error => error.remove());
-
-    const errorElement = document.createElement('div');
-    errorElement.className = 'form-error';
-    errorElement.textContent = message;
-
-    const form = document.querySelector('.item-form');
-    form.insertBefore(errorElement, form.firstChild);
-
-    // Прокрутка к ошибке
-    errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-}
-
-function initializeFieldHints() {
-    // Добавляем подсказки для полей
-    const fieldsWithHints = {
-        'target': 'Сколько раз в день вы планируете выполнять эту привычку?',
-        'frequency': 'Как часто вы будете отслеживать выполнение привычки?',
-        'priority': 'Высокий приоритет для срочных и важных задач',
-        'due_date': 'Установите реалистичный срок выполнения'
-    };
-
-    for (const [fieldId, hint] of Object.entries(fieldsWithHints)) {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            addFieldHint(field, hint);
+function validateForm(form) {
+    let isValid = true;
+    form.querySelectorAll("[required]").forEach((field) => {
+        if (!validateField(field)) {
+            isValid = false;
         }
-    }
+    });
+    return isValid;
 }
 
-function addFieldHint(field, hint) {
-    const hintElement = document.createElement('div');
-    hintElement.className = 'field-hint';
-    hintElement.textContent = hint;
+function initGenericForms(root = document) {
+    root.querySelectorAll(".item-form").forEach((form) => {
+        if (form.dataset.boundValidation === "1") {
+            return;
+        }
+        form.dataset.boundValidation = "1";
 
-    field.parentNode.appendChild(hintElement);
+        form.querySelectorAll("input, select, textarea").forEach((field) => {
+            field.addEventListener("blur", () => validateField(field));
+            field.addEventListener("input", () => {
+                if (field.classList.contains("error")) {
+                    validateField(field);
+                }
+            });
+        });
 
-    // Показываем/скрываем подсказку при фокусе
-    field.addEventListener('focus', function() {
-        hintElement.style.display = 'block';
+        form.addEventListener("submit", (event) => {
+            const method = (
+                form.dataset.method ||
+                form.getAttribute("method") ||
+                "post"
+            ).toLowerCase();
+
+            if (!validateForm(form)) {
+                event.preventDefault();
+                showFormError("Пожалуйста, проверьте обязательные поля.");
+                return;
+            }
+
+            if (method !== "put") {
+                form.querySelector('button[type="submit"]')?.classList.add("btn-loading");
+            }
+        });
     });
-
-    field.addEventListener('blur', function() {
-        hintElement.style.display = 'none';
-    });
-
-    hintElement.style.display = 'none';
 }
+
+window.validateForm = validateForm;
+window.showFormError = showFormError;
+window.HabitFlowUI.registerInit(initGenericForms);

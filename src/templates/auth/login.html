@@ -3,82 +3,93 @@
 {% block title %}Вход - HabitFlow{% endblock %}
 
 {% block content %}
-<div class="auth-shell">
-    <div class="auth-card">
-        <div class="auth-card-header">
-            <span class="auth-eyebrow">Безопасный вход</span>
-            <h1>Войти в HabitFlow</h1>
-            <p>Используйте email и пароль.</p>
-        </div>
-
-        {% if error_message and error_message|trim %}
-        <div class="alert alert-error" data-auth-server-error>
-            <i class="fas fa-exclamation-circle"></i>
-            <span>{{ error_message }}</span>
-        </div>
-        {% endif %}
-
-        <div class="alert alert-error" data-auth-client-error hidden>
-            <i class="fas fa-exclamation-circle"></i>
-            <span data-auth-client-error-text></span>
-        </div>
-
-        <form method="post" action="/auth/login" class="auth-form" autocomplete="on" novalidate>
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="next" value="{{ next_url }}">
-
-            <label class="auth-field" for="email">
-                <span>Email</span>
-                <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    inputmode="email"
-                    autocomplete="email"
-                    autocapitalize="none"
-                    spellcheck="false"
-                    value="{{ form_data.email|default('') }}"
-                    placeholder="you@example.com"
-                    required
-                >
-            </label>
-
-            <label class="auth-field" for="password">
-                <span>Пароль</span>
-                <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autocomplete="current-password"
-                    placeholder="Введите пароль"
-                    required
-                >
-            </label>
-
-            <button type="submit" class="btn auth-submit">
-                <i class="fas fa-sign-in-alt"></i>
-                Войти
-            </button>
-        </form>
-        <div class="auth-footer">
-            <p>Нет аккаунта? <a href="/auth/register{% if next_url != '/' %}?next={{ next_url|urlencode }}{% endif %}">Создать</a></p>
-        </div>
-        {% if google_oauth_enabled %}
-        {% set google_oauth_href = "/auth/google/start?next=" ~ (next_url|urlencode) %}
-        <div class="auth-oauth auth-oauth-after-form">
-            <p class="auth-oauth-hint">Или войдите с помощью</p>
-            <a href="{{ google_oauth_href }}" class="btn auth-oauth-btn">
-                <span class="auth-oauth-badge">
-                    <i class="fab fa-google"></i>
-                </span>
-                <span>Google</span>
+<div class="auth-page">
+    <div class="auth-shell">
+        <a href="/" class="auth-backdrop" aria-label="Закрыть окно входа" data-enhanced-nav="true"></a>
+        <div class="surface-card auth-card">
+            <a href="/" class="auth-close" aria-label="Закрыть окно входа" data-enhanced-nav="true">
+                <i class="fa-solid fa-xmark"></i>
             </a>
+            <div class="auth-card-header">
+                <span class="auth-eyebrow"><i class="fa-solid fa-shield-halved"></i> Безопасный вход</span>
+                <h1>Войти в HabitFlow</h1>
+                <p>Используйте email и пароль. Всё остальное приложение уже подстроится под вас без отдельной настройки профиля.</p>
+            </div>
+
+            {% if error_message and error_message|trim %}
+            <div class="alert alert-error" data-auth-server-error>
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>{{ error_message }}</span>
+            </div>
+            {% endif %}
+
+            <div class="alert alert-error" data-auth-client-error hidden>
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span data-auth-client-error-text></span>
+            </div>
+
+            <form method="post" action="/auth/login" class="auth-form" autocomplete="on" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="next" value="{{ next_url }}">
+
+                <label class="auth-field" for="email">
+                    <span>Email</span>
+                    <span class="auth-input-wrap">
+                        <i class="fa-regular fa-envelope auth-input-icon"></i>
+                        <input
+                            id="email"
+                            name="email"
+                            type="email"
+                            inputmode="email"
+                            autocomplete="email"
+                            autocapitalize="none"
+                            spellcheck="false"
+                            value="{{ form_data.email|default('') }}"
+                            placeholder="you@example.com"
+                            required
+                        >
+                    </span>
+                </label>
+
+                <label class="auth-field" for="password">
+                    <span>Пароль</span>
+                    <span class="auth-input-wrap">
+                        <i class="fa-solid fa-lock auth-input-icon"></i>
+                        <input
+                            id="password"
+                            name="password"
+                            type="password"
+                            autocomplete="current-password"
+                            placeholder="Введите пароль"
+                            required
+                        >
+                        <button type="button" class="auth-password-toggle" data-password-toggle="password" aria-label="Показать пароль">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </span>
+                </label>
+
+                <button type="submit" class="btn auth-submit">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    Войти
+                </button>
+            </form>
+
+            {% if google_oauth_enabled %}
+            {% set google_oauth_href = "/auth/google/start?next=" ~ (next_url|urlencode) %}
+            <div class="auth-oauth">
+                <div class="auth-divider"><span>или войдите через</span></div>
+                <a href="{{ google_oauth_href }}" class="btn auth-oauth-btn">
+                    <i class="fa-brands fa-google"></i>
+                    Google
+                </a>
+            </div>
+            {% endif %}
+
+            <div class="auth-footer">
+                <p>Нет аккаунта? <a href="/auth/register{% if next_url != '/' %}?next={{ next_url|urlencode }}{% endif %}" data-enhanced-nav="true">Создать</a></p>
+            </div>
         </div>
-        {% endif %}
     </div>
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script src="{{ url_for('static', path='/js/auth_validation.js') }}"></script>
 {% endblock %}
