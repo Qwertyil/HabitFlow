@@ -399,7 +399,10 @@ Screenshots are captured with demo data (themes, tasks, habits, partial task com
 
 ## Documentation
 
+- `docs/README.md` for documentation map and file roles
 - `docs/overview.mdc` for project context and architecture principles
+- `docs/project/overview.md` for the live HabitFlow lab task dashboard
+- `docs/project/startup.md` for new-session handoff and current workspace state
 - `docs/api_contract.mdc` for current HTTP contracts
 - `docs/session_contract.mdc` for auth and session behavior
 
