@@ -6,243 +6,156 @@
 {% set is_update = habit_data.id is defined %}
 
 {% block title %}{% if is_update %}Редактирование{% else %}Новая{% endif %} привычка - HabitFlow{% endblock %}
-
-{% block form_icon %}<i class="fas fa-sync-alt"></i>{% endblock %}
+{% block form_icon %}<i class="fa-solid fa-arrow-trend-up"></i>{% endblock %}
 {% block form_heading %}{% if is_update %}Редактирование{% else %}Создание{% endif %} привычки{% endblock %}
-{% block form_description %}Настройте расписание и отслеживайте серию выполнения{% endblock %}
+{% block form_description %}Настройте расписание, период и тему так, чтобы привычка работала в реальном дне, а не только в макете.{% endblock %}
 {% block form_action %}/habits{% if is_update %}/{{ habit_data.id }}{% else %}/{% endif %}{% endblock %}
 {% block form_method %}{% if is_update %}put{% else %}post{% endif %}{% endblock %}
 
 {% block basic_fields %}
-<div class="form-group">
-    <label for="name">
-        <i class="fas fa-tag"></i>
-        Название *
-    </label>
-    <input type="text" id="name" name="name" maxlength="46" required
-           class="form-control" value="{{ habit_data.name|default('') }}">
-    <div class="form-hint">Короткое и понятное название привычки</div>
-</div>
-
-<div class="form-group">
-    <label for="description">
-        <i class="fas fa-align-left"></i>
-        Описание
-    </label>
-    <textarea id="description" name="description" class="form-control" maxlength="200" rows="3">{{ habit_data.description|default('', true) }}</textarea>
-    <div class="form-hint">Необязательно, до 200 символов</div>
-</div>
-
-<div class="form-group">
-    <label>
-        <i class="fas fa-tags"></i>
-        Тема
-    </label>
-    <div class="themes-radio-container">
-        <div class="theme-radio-option">
-            <input type="radio"
-                   id="theme-none"
-                   name="theme_id"
-                   value="NoTheme"
-                   class="theme-radio-input"
-                   {% if not habit_data.theme_id %}checked{% endif %}>
-            <label for="theme-none" class="theme-radio-label">
-                <span class="theme-color-indicator" style="background-color: #95a5a6"></span>
-                <span class="theme-name">Без темы</span>
-            </label>
-        </div>
-
-        {% for theme in themes %}
-            {% if theme.name != "Все темы" %}
-            <div class="theme-radio-option">
-                <input type="radio"
-                       id="theme-{{ theme.id }}"
-                       name="theme_id"
-                       value="{{ theme.id }}"
-                       class="theme-radio-input"
-                       {% if habit_data.theme_id == theme.id %}checked{% endif %}>
-                <label for="theme-{{ theme.id }}" class="theme-radio-label">
-                    <span class="theme-color-indicator" style="background-color: {{ theme.color }}"></span>
-                    <span class="theme-name">{{ theme.name }}</span>
-                </label>
-            </div>
-            {% endif %}
-        {% endfor %}
+<div class="form-grid">
+    <div class="form-group">
+        <label for="name"><i class="fa-solid fa-heading"></i> Название *</label>
+        <input type="text" id="name" name="name" maxlength="46" required class="input-control" value="{{ habit_data.name|default('') }}">
+        <p class="form-hint">До 46 символов, коротко и узнаваемо.</p>
     </div>
-    <div class="form-hint">Категория привычки для фильтрации и группировки</div>
+
+    <div class="form-group">
+        <label for="description"><i class="fa-solid fa-align-left"></i> Описание</label>
+        <textarea id="description" name="description" maxlength="200" rows="4" class="textarea-control">{{ habit_data.description|default('', true) }}</textarea>
+        <p class="form-hint">Необязательно, до 200 символов.</p>
+    </div>
 </div>
 {% endblock %}
 
 {% block specific_fields %}
-<div class="form-section">
+<section class="surface-card form-section">
     <div class="section-header">
-        <i class="fas fa-calendar-alt"></i>
-        <h3>Расписание привычки</h3>
+        <i class="fa-solid fa-palette"></i>
+        <h3>Тема</h3>
     </div>
-
-    <div class="form-group">
-        <label for="schedule_type">
-            <i class="fas fa-repeat"></i>
-            Тип расписания *
+    <div class="selection-grid themes">
+        <label class="selection-option">
+            <input type="radio" id="theme-none" name="theme_id" value="NoTheme" {% if not habit_data.theme_id %}checked{% endif %}>
+            <span class="selection-card">
+                <span class="selection-dot" style="background: #8a90a8;"></span>
+                <span class="selection-title">Без темы</span>
+                <span class="selection-meta">Свободная привычка</span>
+            </span>
         </label>
-        <select id="schedule_type" name="schedule_type" class="form-control" required>
-            <option value="daily" {% if habit_data.schedule_type|default("daily") == "daily" %}selected{% endif %}>Ежедневно</option>
-            <option value="interval_cycle" {% if habit_data.schedule_type|default("") == "interval_cycle" %}selected{% endif %}>Интервально</option>
-            <option value="weekly_days" {% if habit_data.schedule_type|default("") == "weekly_days" %}selected{% endif %}>По дням недели</option>
-            <option value="monthly_day" {% if habit_data.schedule_type|default("") == "monthly_day" %}selected{% endif %}>Конкретный день месяца</option>
-            <option value="yearly_date" {% if habit_data.schedule_type|default("") == "yearly_date" %}selected{% endif %}>Конкретная дата в году</option>
-        </select>
-    </div>
-
-    <div id="schedule-config-daily" class="schedule-config-block">
-        <div class="form-hint">Привычка выполняется каждый день.</div>
-    </div>
-
-    <div id="schedule-config-weekly-days" class="schedule-config-block">
-        <label><i class="fas fa-calendar-week"></i> Выберите дни недели</label>
-        <div class="priority-radio-container">
-            {% set weekly_days = cfg.get("days", []) %}
-            {% for day in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] %}
-            <div class="priority-radio-option">
-                <input type="checkbox"
-                       id="weekly-days-{{ day }}"
-                       name="weekly_days"
-                       value="{{ day }}"
-                       class="priority-radio-input"
-                       {% if day in weekly_days %}checked{% endif %}>
-                <label for="weekly-days-{{ day }}" class="priority-radio-label">
-                    <span class="priority-name">{{ weekday_labels.get(day, day) }}</span>
-                </label>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <div id="schedule-config-monthly-day" class="schedule-config-block">
-        <div class="form-group">
-            <label for="monthly_day">
-                <i class="fas fa-calendar-day"></i>
-                День месяца
+        {% for theme in themes %}
+            {% if theme.name != 'Все темы' %}
+            <label class="selection-option">
+                <input type="radio" id="theme-{{ theme.id }}" name="theme_id" value="{{ theme.id }}" {% if habit_data.theme_id == theme.id %}checked{% endif %}>
+                <span class="selection-card">
+                    <span class="selection-dot" style="background: {{ theme.color }};"></span>
+                    <span class="selection-title">{{ theme.name }}</span>
+                    <span class="selection-meta">Тема пользователя</span>
+                </span>
             </label>
-            <input type="number"
-                   id="monthly_day"
-                   name="monthly_day"
-                   class="form-control"
-                   min="1"
-                   max="31"
-                   value="{{ cfg.get('day', 1) }}">
-        </div>
+            {% endif %}
+        {% endfor %}
     </div>
+</section>
 
-    <div id="schedule-config-interval-cycle" class="schedule-config-block">
-        <div class="form-group">
-            <label for="interval_active_days">
-                <i class="fas fa-hashtag"></i>
-                Дней подряд (N)
-            </label>
-            <input type="number"
-                   id="interval_active_days"
-                   name="interval_active_days"
-                   class="form-control"
-                   min="1"
-                   value="{{ cfg.get('active_days', 1) }}">
-        </div>
-        <div class="form-group">
-            <label for="interval_break_days">
-                <i class="fas fa-pause"></i>
-                Дней перерыва (K)
-            </label>
-            <input type="number"
-                   id="interval_break_days"
-                   name="interval_break_days"
-                   class="form-control"
-                   min="1"
-                   value="{{ cfg.get('break_days', 1) }}">
-        </div>
-    </div>
-
-    <div id="schedule-config-yearly-date" class="schedule-config-block">
-        <div class="form-group">
-            <label for="yearly_month">
-                <i class="fas fa-calendar-alt"></i>
-                Месяц
-            </label>
-            <input type="number"
-                   id="yearly_month"
-                   name="yearly_month"
-                   class="form-control"
-                   min="1"
-                   max="12"
-                   value="{{ cfg.get('month', 1) }}">
-        </div>
-        <div class="form-group">
-            <label for="yearly_day">
-                <i class="fas fa-calendar-day"></i>
-                День
-            </label>
-            <input type="number"
-                   id="yearly_day"
-                   name="yearly_day"
-                   class="form-control"
-                   min="1"
-                   max="31"
-                   value="{{ cfg.get('day', 1) }}">
-        </div>
-    </div>
-
-    <input type="hidden"
-           id="schedule_config"
-           name="schedule_config"
-           value='{{ cfg|tojson }}'>
-</div>
-
-<div class="form-section">
+<section class="surface-card form-section">
     <div class="section-header">
-        <i class="fas fa-hourglass-half"></i>
+        <i class="fa-regular fa-calendar"></i>
+        <h3>Расписание</h3>
+    </div>
+    <div class="form-grid">
+        <div class="form-group">
+            <label for="schedule_type"><i class="fa-solid fa-repeat"></i> Тип расписания *</label>
+            <select id="schedule_type" name="schedule_type" class="select-control" required>
+                <option value="daily" {% if habit_data.schedule_type|default("daily") == "daily" %}selected{% endif %}>Ежедневно</option>
+                <option value="interval_cycle" {% if habit_data.schedule_type|default("") == "interval_cycle" %}selected{% endif %}>Интервально</option>
+                <option value="weekly_days" {% if habit_data.schedule_type|default("") == "weekly_days" %}selected{% endif %}>По дням недели</option>
+                <option value="monthly_day" {% if habit_data.schedule_type|default("") == "monthly_day" %}selected{% endif %}>Конкретный день месяца</option>
+                <option value="yearly_date" {% if habit_data.schedule_type|default("") == "yearly_date" %}selected{% endif %}>Конкретная дата в году</option>
+            </select>
+            <div class="schedule-helper" id="scheduleHint">Привычка выполняется каждый день.</div>
+        </div>
+
+        <div id="schedule-config-daily" class="schedule-config-block is-visible">
+            <div class="schedule-helper">Без дополнительных параметров: просто ежедневный ритм.</div>
+        </div>
+
+        <div id="schedule-config-weekly-days" class="schedule-config-block">
+            <div class="selection-grid themes">
+                {% set weekly_days = cfg.get("days", []) %}
+                {% for day in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] %}
+                <label class="selection-option">
+                    <input type="checkbox" id="weekly-days-{{ day }}" name="weekly_days" value="{{ day }}" {% if day in weekly_days %}checked{% endif %}>
+                    <span class="selection-card">
+                        <span class="selection-title">{{ weekday_labels.get(day, day) }}</span>
+                        <span class="selection-meta">День недели</span>
+                    </span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="schedule-config-monthly-day" class="schedule-config-block">
+            <div class="form-group">
+                <label for="monthly_day"><i class="fa-solid fa-calendar-day"></i> День месяца</label>
+                <input type="number" id="monthly_day" name="monthly_day" class="input-control" min="1" max="31" value="{{ cfg.get('day', 1) }}">
+            </div>
+        </div>
+
+        <div id="schedule-config-yearly-date" class="schedule-config-block">
+            <div class="form-inline-grid">
+                <div class="form-group">
+                    <label for="yearly_month"><i class="fa-solid fa-calendar"></i> Месяц</label>
+                    <input type="number" id="yearly_month" name="yearly_month" class="input-control" min="1" max="12" value="{{ cfg.get('month', 1) }}">
+                </div>
+                <div class="form-group">
+                    <label for="yearly_day"><i class="fa-solid fa-calendar-day"></i> День</label>
+                    <input type="number" id="yearly_day" name="yearly_day" class="input-control" min="1" max="31" value="{{ cfg.get('day', 1) }}">
+                </div>
+            </div>
+        </div>
+
+        <div id="schedule-config-interval-cycle" class="schedule-config-block">
+            <div class="form-inline-grid">
+                <div class="form-group">
+                    <label for="interval_active_days"><i class="fa-solid fa-play"></i> Дней подряд</label>
+                    <input type="number" id="interval_active_days" name="interval_active_days" class="input-control" min="1" value="{{ cfg.get('active_days', 1) }}">
+                </div>
+                <div class="form-group">
+                    <label for="interval_break_days"><i class="fa-solid fa-pause"></i> Дней перерыва</label>
+                    <input type="number" id="interval_break_days" name="interval_break_days" class="input-control" min="1" value="{{ cfg.get('break_days', 1) }}">
+                </div>
+            </div>
+        </div>
+
+        <input type="hidden" id="schedule_config" name="schedule_config" value='{{ cfg|tojson }}'>
+    </div>
+</section>
+
+<section class="surface-card form-section">
+    <div class="section-header">
+        <i class="fa-regular fa-clock"></i>
         <h3>Период выполнения</h3>
     </div>
-
-    <div class="form-group">
-        <label for="starts_on">
-            <i class="fas fa-play"></i>
-            Начало периода
-        </label>
-        <input type="date"
-               id="starts_on"
-               name="starts_on"
-               class="form-control"
-               value="{{ habit_data.starts_on|default('', true) }}">
-        <div class="form-hint">Необязательно. Если пусто, период считается без фиксированного начала.</div>
+    <div class="form-inline-grid">
+        <div class="form-group">
+            <label for="starts_on"><i class="fa-solid fa-flag"></i> Начало периода</label>
+            <input type="date" id="starts_on" name="starts_on" class="input-control" value="{{ habit_data.starts_on|default('', true) }}">
+            <p class="form-hint">Можно оставить пустым.</p>
+        </div>
+        <div class="form-group">
+            <label for="ends_on"><i class="fa-solid fa-flag-checkered"></i> Конец периода</label>
+            <input type="date" id="ends_on" name="ends_on" class="input-control" value="{{ habit_data.ends_on|default('', true) }}">
+            <p class="form-hint">Не раньше даты начала.</p>
+        </div>
     </div>
-
-    <div class="form-group">
-        <label for="ends_on">
-            <i class="fas fa-flag-checkered"></i>
-            Конец периода
-        </label>
-        <input type="date"
-               id="ends_on"
-               name="ends_on"
-               class="form-control"
-               value="{{ habit_data.ends_on|default('', true) }}">
-    </div>
-
-    <div class="form-group">
-        <label for="period-infinite">
-            <input
-                type="checkbox"
-                id="period-infinite"
-                {% if not habit_data.ends_on %}checked{% endif %}
-            >
-            Бесконечный период
-        </label>
-    </div>
-</div>
-
-<script src="{{ url_for('static', path='/js/habit_form.js') }}?v=20260305-interval"></script>
-<script src="{{ url_for('static', path='/js/update.js') }}"></script>
+    <label class="checkbox-row" for="period-infinite">
+        <input type="checkbox" id="period-infinite" {% if not habit_data.ends_on %}checked{% endif %}>
+        <span>Бесконечный период</span>
+    </label>
+</section>
 {% endblock %}
 
 {% block cancel_url %}/habits{% endblock %}
-{% block submit_icon %}<i class="fas fa-save"></i>{% endblock %}
-{% block submit_text %}{% if is_update %}Сохранить изменения{% else %}Создать привычку{% endif %}{% endblock %}
+{% block submit_icon %}<i class="fa-solid fa-floppy-disk"></i>{% endblock %}
+{% block submit_text %}{% if is_update %}Сохранить привычку{% else %}Создать привычку{% endif %}{% endblock %}

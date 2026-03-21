@@ -1,103 +1,86 @@
 {% extends "base_form.html" %}
 
 {% block title %}Новая задача - HabitFlow{% endblock %}
-
-{% block form_icon %}<i class="fas fa-tag"></i>{% endblock %}
-{% block form_heading %}{% if task.name %}Обновление{% else %}Создание{% endif %} задачи{% endblock %}
-{% block form_description %}{% if task.name %}Обновите{% else %}Создайте новую{% endif %} задачу{% endblock %}
+{% block form_icon %}<i class="fa-regular fa-circle-check"></i>{% endblock %}
+{% block form_heading %}{% if task.name %}Редактирование{% else %}Создание{% endif %} задачи{% endblock %}
+{% block form_description %}Соберите задачу из основной информации, темы и приоритета без лишних шагов.{% endblock %}
 {% block form_action %}/tasks{% if task.name %}/{{ task.id }}{% endif %}{% endblock %}
 {% block form_method %}{% if task.name %}put{% else %}post{% endif %}{% endblock %}
 
 {% block basic_fields %}
-<div class="form-group">
-    <label for="name">
-        <i class="fas fa-tag"></i>
-        Название *
-    </label>
-    <input type="text" id="name" name="name" maxlength="46" required
-           class="form-control" value="{{ task.name }}">
-    <div class="form-hint">Укажите название задачи</div>
-
-    <label for="description">
-        <i class="fas fa-tag"></i>
-        Описание
-    </label>
-    <input type="text" id="description" name="description" class="form-control" maxlength="336" value="{{ task.description }}">
-    <div class="form-hint">Опишите вашу задачу более подробно (необязательно)</div>
-
+<div class="form-grid">
     <div class="form-group">
-        <label>
-            <i class="fas fa-tags"></i>
-            Тема
-        </label>
-        <div class="themes-radio-container">
-            <div class="theme-radio-option">
-                <input type="radio" id="theme-none" name="theme_id" value="NoTheme" class="theme-radio-input" {% if not task.theme_id %}checked{% endif %}>
-                <label for="theme-none" class="theme-radio-label">
-                    <span class="theme-color-indicator" style="background-color: #95a5a6"></span>
-                    <span class="theme-name">Без темы</span>
-                </label>
-            </div>
-            {% for theme in themes %}
-                {% if task.theme_id == theme.id %}
-                    <div class="theme-radio-option">
-                        <input type="radio" id="theme-{{ theme.id }}" name="theme_id" value="{{ theme.id }}" checked class="theme-radio-input">
-                        <label for="theme-{{ theme.id }}" class="theme-radio-label">
-                            <span class="theme-color-indicator" style="background-color: {{ theme.color }}"></span>
-                            <span class="theme-name">{{ theme.name }}</span>
-                        </label>
-                    </div>
-                {% elif loop.index > 1 %}
-                    <div class="theme-radio-option">
-                        <input type="radio" id="theme-{{ theme.id }}" name="theme_id" value="{{ theme.id }}" class="theme-radio-input">
-                        <label for="theme-{{ theme.id }}" class="theme-radio-label">
-                            <span class="theme-color-indicator" style="background-color: {{ theme.color }}"></span>
-                            <span class="theme-name">{{ theme.name }}</span>
-                        </label>
-                    </div>
-                {% endif %}
-            {% endfor %}
-        </div>
-        <div class="form-hint">Выберите тему для категоризации задачи</div>
+        <label for="name"><i class="fa-solid fa-heading"></i> Название *</label>
+        <input type="text" id="name" name="name" maxlength="46" required class="input-control" value="{{ task.name|default('') }}">
+        <p class="form-hint">До 46 символов, коротко и по делу.</p>
     </div>
 
     <div class="form-group">
-        <label>
-            <i class="fas fa-exclamation-circle"></i>
-            Приоритет *
-        </label>
-        <div class="priority-radio-container">
-            {% for priority_key, priority_data in priorities.items() %}
-                {% if priority_key == task.priority or (not task.priority and loop.first) %}
-                    <div class="priority-radio-option">
-                        <input type="radio" id="priority-{{ priority_key }}" name="priority" value="{{ priority_key }}"
-                            checked class="priority-radio-input">
-                        <label for="priority-{{ priority_key }}" class="priority-radio-label"
-                            style="--priority-color: {{ priority_data.color }}">
-                            <i class="fas fa-flag"></i>
-                            <span class="priority-name">{{ priority_data.name }}</span>
-                        </label>
-                    </div>
-                {% else %}
-                    <div class="priority-radio-option">
-                        <input type="radio" id="priority-{{ priority_key }}" name="priority" value="{{ priority_key }}"
-                            class="priority-radio-input">
-                        <label for="priority-{{ priority_key }}" class="priority-radio-label"
-                            style="--priority-color: {{ priority_data.color }}">
-                            <i class="fas fa-flag"></i>
-                            <span class="priority-name">{{ priority_data.name }}</span>
-                        </label>
-                    </div>
-                {% endif %}
-            {% endfor %}
-        </div>
-        <div class="form-hint">Выберите важность выполнения этой задачи</div>
+        <label for="description"><i class="fa-solid fa-align-left"></i> Описание</label>
+        <textarea id="description" name="description" maxlength="336" class="textarea-control">{{ task.description|default('', true) }}</textarea>
+        <p class="form-hint">Необязательное поле для краткого контекста.</p>
     </div>
 </div>
-<script src="{{ url_for('static', path='/js/update.js') }}"></script>
 {% endblock %}
 
+{% block specific_fields %}
+<section class="surface-card form-section">
+    <div class="section-header">
+        <i class="fa-solid fa-palette"></i>
+        <h3>Тема</h3>
+    </div>
+    <div class="selection-grid themes">
+        <label class="selection-option">
+            <input type="radio" id="theme-none" name="theme_id" value="NoTheme" {% if not task.theme_id %}checked{% endif %}>
+            <span class="selection-card">
+                <span class="selection-dot" style="background: #8a90a8;"></span>
+                <span class="selection-title">Без темы</span>
+                <span class="selection-meta">Свободная задача</span>
+            </span>
+        </label>
+        {% for theme in themes %}
+            {% if theme.name != 'Все темы' %}
+            <label class="selection-option">
+                <input type="radio" id="theme-{{ theme.id }}" name="theme_id" value="{{ theme.id }}" {% if task.theme_id == theme.id %}checked{% endif %}>
+                <span class="selection-card">
+                    <span class="selection-dot" style="background: {{ theme.color }};"></span>
+                    <span class="selection-title">{{ theme.name }}</span>
+                    <span class="selection-meta">Тема пользователя</span>
+                </span>
+            </label>
+            {% endif %}
+        {% endfor %}
+    </div>
+</section>
+
+<section class="surface-card form-section">
+    <div class="section-header">
+        <i class="fa-solid fa-flag"></i>
+        <h3>Приоритет</h3>
+    </div>
+    <div class="selection-grid priority">
+        {% for priority_key, priority_data in priorities.items() %}
+        <label class="selection-option priority-{{ priority_key }}">
+            <input type="radio" id="priority-{{ priority_key }}" name="priority" value="{{ priority_key }}" {% if priority_key == task.priority or (not task.priority and loop.first) %}checked{% endif %}>
+            <span class="selection-card">
+                <span class="selection-icon">
+                    {% if priority_key == 'high' %}
+                    <i class="fa-solid fa-arrow-up"></i>
+                    {% elif priority_key == 'medium' %}
+                    <i class="fa-solid fa-minus"></i>
+                    {% else %}
+                    <i class="fa-solid fa-arrow-down"></i>
+                    {% endif %}
+                </span>
+                <span class="selection-title">{{ priority_data.name }}</span>
+                <span class="selection-meta">Вес в общем списке</span>
+            </span>
+        </label>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
 
 {% block cancel_url %}/tasks{% endblock %}
-{% block submit_icon %}<i class="fas fa-refresh"></i>{% endblock %}
-{% block submit_text %}{% if task.name %}Обновить{% else %}Создать{% endif %} задачу{% endblock %}
+{% block submit_icon %}<i class="fa-solid fa-floppy-disk"></i>{% endblock %}
+{% block submit_text %}{% if task.name %}Сохранить задачу{% else %}Создать задачу{% endif %}{% endblock %}

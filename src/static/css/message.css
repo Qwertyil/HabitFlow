@@ -1,0 +1,80 @@
+.message-shell {
+  max-width: 620px;
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+}
+
+.message-card {
+  display: grid;
+  gap: 18px;
+  justify-items: center;
+  text-align: center;
+  padding: 34px 28px;
+}
+
+.message-icon {
+  width: 72px;
+  height: 72px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 22px;
+  font-size: 28px;
+}
+
+.message-success {
+  color: var(--mint);
+  background: rgba(0, 201, 167, 0.12);
+}
+
+.message-error {
+  color: var(--danger);
+  background: rgba(255, 107, 107, 0.12);
+}
+
+.message-warning {
+  color: var(--warn);
+  background: rgba(255, 179, 71, 0.12);
+}
+
+.message-info {
+  color: var(--accent);
+  background: rgba(108, 99, 255, 0.12);
+}
+
+.message-title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.message-text,
+.message-details p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.message-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+@media (max-width: 760px) {
+  .message-card {
+    padding: 22px 18px;
+  }
+
+  .message-actions {
+    flex-direction: column;
+  }
+
+  .message-actions .btn {
+    width: 100%;
+  }
+}

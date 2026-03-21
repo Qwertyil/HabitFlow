@@ -1,68 +1,46 @@
-// Функция для редактирования темы (перенаправление на страницу редактирования)
-function editTheme(themeId) {
-    // Перенаправляем на страницу редактирования темы
-    window.location.href = `/themes/${encodeURIComponent(themeId)}`;
-}
+function initThemeDelete(root = document) {
+    root.querySelectorAll(".btn-theme-delete").forEach((button) => {
+        if (button.dataset.boundDelete === "1") {
+            return;
+        }
+        button.dataset.boundDelete = "1";
+        button.addEventListener("click", async () => {
+            const themeId = button.dataset.themeId;
+            if (
+                !themeId ||
+                !window.confirm(
+                    'Удалить эту тему? Все связанные задачи и привычки останутся, но станут "Без темы".'
+                )
+            ) {
+                return;
+            }
+            button.disabled = true;
 
-// Функция для удаления темы
-async function deleteTheme(themeId) {
-    if (!confirm('Вы уверены, что хотите удалить эту тему? Все задачи с этой темой будут перемещены в "Без темы".')) {
-        return;
-    }
+            try {
+                const response = await fetch(`/themes/${themeId}`, {
+                    method: "DELETE",
+                    headers: {
+                        "X-CSRFToken": window.HabitFlowUI.getCsrfToken(),
+                    },
+                    credentials: "same-origin",
+                });
 
-    try {
-        const response = await fetch(`/themes/${encodeURIComponent(themeId)}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
+                if (response.status !== 204) {
+                    throw new Error("Theme delete failed");
+                }
+
+                window.HabitFlowUI.showNotification("Тема удалена", "success");
+                await window.HabitFlowUI.navigate(window.location.href, {
+                    replace: true,
+                    preserveScroll: true,
+                });
+            } catch (error) {
+                console.error(error);
+                window.HabitFlowUI.showNotification("Не удалось удалить тему", "error");
+                button.disabled = false;
             }
         });
-
-        if (response.status === 204) {
-            showNotification('Тема удалена', 'success');
-
-            // Удаляем элемент из DOM
-            const themeElement = findThemeCardById(themeId);
-            if (themeElement) {
-                const themeName = themeElement.dataset.themeName;
-                themeElement.remove();
-
-                // Обновляем список тем в сайдбаре если есть (там фильтр по имени)
-                if (themeName) {
-                    updateSidebarThemes(themeName);
-                }
-            }
-
-            // Перезагружаем страницу через 1 секунду
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-
-        } else {
-            showNotification('Ошибка при удалении темы', 'error');
-        }
-    } catch (error) {
-        console.error('Error deleting theme:', error);
-        showNotification('Ошибка соединения с сервером', 'error');
-    }
-}
-
-// Функция для обновления списка тем в сайдбаре после удаления
-function updateSidebarThemes(deletedThemeName) {
-    const sidebarLinks = document.querySelectorAll('.theme-filter-link');
-    sidebarLinks.forEach(link => {
-        const themeParam = new URL(link.href, window.location.origin).searchParams.get('theme');
-        if (themeParam === deletedThemeName) {
-            const sidebarItem = link.closest('.topic-item');
-            if (sidebarItem) {
-                sidebarItem.remove();
-            }
-        }
     });
 }
 
-function findThemeCardById(themeId) {
-    const cards = document.querySelectorAll('.theme-card[data-theme-id]');
-    return Array.from(cards).find(card => card.dataset.themeId === themeId) || null;
-}
+window.HabitFlowUI.registerInit(initThemeDelete);

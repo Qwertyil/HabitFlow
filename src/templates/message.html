@@ -4,24 +4,26 @@
 
 {% block content %}
 <div class="message-page">
-    <div class="message-container">
-        <div class="message-icon message-{{ message_type }}">
-            {% if message_type == 'success' %}
-            <i class="fas fa-check-circle"></i>
-            {% elif message_type == 'error' %}
-            <i class="fas fa-exclamation-circle"></i>
-            {% elif message_type == 'warning' %}
-            <i class="fas fa-exclamation-triangle"></i>
-            {% elif message_type == 'info' %}
-            <i class="fas fa-info-circle"></i>
-            {% else %}
-            <i class="fas fa-bell"></i>
-            {% endif %}
-        </div>
+    <div class="message-shell">
+        <div class="surface-card message-card">
+            <div class="message-icon message-{{ message_type }}">
+                {% if message_type == 'success' %}
+                <i class="fa-solid fa-circle-check"></i>
+                {% elif message_type == 'error' %}
+                <i class="fa-solid fa-circle-exclamation"></i>
+                {% elif message_type == 'warning' %}
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                {% elif message_type == 'info' %}
+                <i class="fa-solid fa-circle-info"></i>
+                {% else %}
+                <i class="fa-solid fa-bell"></i>
+                {% endif %}
+            </div>
 
-        <div class="message-content">
-            <h1>{{ title }}</h1>
-            <p class="message-text">{{ message }}</p>
+            <div>
+                <h1 class="message-title">{{ title }}</h1>
+                <p class="message-text">{{ message }}</p>
+            </div>
 
             {% if details %}
             <div class="message-details">
@@ -31,30 +33,31 @@
 
             <div class="message-actions">
                 {% if primary_url and primary_text %}
-                <a href="{{ primary_url }}" class="btn btn-primary">
-                    {% if primary_icon %}<i class="fas {{ primary_icon }}"></i>{% endif %}
+                <a href="{{ primary_url }}" class="btn btn-primary" data-enhanced-nav="true">
+                    {% if primary_icon %}<i class="fa-solid {{ primary_icon }}"></i>{% endif %}
                     {{ primary_text }}
                 </a>
                 {% endif %}
 
                 {% if secondary_url and secondary_text %}
-                <a href="{{ secondary_url }}" class="btn btn-outline">
-                    {% if secondary_icon %}<i class="fas {{ secondary_icon }}"></i>{% endif %}
+                <a href="{{ secondary_url }}" class="btn btn-outline" data-enhanced-nav="true">
+                    {% if secondary_icon %}<i class="fa-solid {{ secondary_icon }}"></i>{% endif %}
                     {{ secondary_text }}
                 </a>
                 {% endif %}
 
                 {% if not primary_url and not secondary_url %}
-                <a href="javascript:window.history.back();" class="btn btn-primary">
-                    <i class="fas fa-arrow-left"></i> Назад
+                <a href="/" class="btn btn-primary" data-enhanced-nav="true">
+                    <i class="fa-solid fa-house"></i>
+                    На главную
                 </a>
-                <a href="/" class="btn btn-outline">
-                    <i class="fas fa-home"></i> На главную
+                <a href="javascript:history.back()" class="btn btn-outline" data-no-enhance="true">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Назад
                 </a>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
-
 {% endblock %}

@@ -5,176 +5,225 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token|default('', true) }}">
     <title>{% block title %}HabitFlow - Управляй своими привычками{% endblock %}</title>
-    <link href="{{ url_for('static', path='/css/style.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', path='/css/layout-fixes.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', path='/css/lists.css') }}" rel="stylesheet">
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('habitflow-ui-theme');
+            const theme = savedTheme === 'dark' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-ui-theme', theme);
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="{{ url_for('static', path='/css/design-system.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/navbar.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/app-shell.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/home.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/tasks.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/habits.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/themes.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', path='/css/forms.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', path='/css/dashboard.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/auth.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', path='/css/stats.css') }}" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/message.css') }}" rel="stylesheet">
 </head>
 <body data-page="{{ current_page|default('app', true) }}">
-    <!-- Верхняя навигационная панель -->
-    <nav class="navbar">
-        <div class="nav-container">
-            {% set next_target = request.url.path %}
-            {% if request.url.query %}
-                {% set next_target = request.url.path ~ '?' ~ request.url.query %}
-            {% endif %}
-            <a href="/" class="nav-brand">
-                <i class="fas fa-chart-line"></i>
-                HabitFlow
+    {% set next_target = request.url.path %}
+    {% if request.url.query %}
+        {% set next_target = request.url.path ~ '?' ~ request.url.query %}
+    {% endif %}
+    {% set user_initial = (current_user.email[:1] if current_user and current_user.email else 'H')|upper %}
+    {% set stats_data = stats if stats is defined and stats else namespace(
+        active_tasks=0,
+        total_habits=0,
+        active_habits=0,
+        due_habits_today=0,
+        completed_habits_today=0,
+        success_rate=0
+    ) %}
+    {% set success_rate = stats_data.success_rate|default(0) %}
+    {% if success_rate <= 33 %}
+        {% set success_color = 'var(--danger)' %}
+    {% elif success_rate <= 66 %}
+        {% set success_color = 'var(--warn)' %}
+    {% else %}
+        {% set success_color = 'var(--mint)' %}
+    {% endif %}
+
+    <nav class="app-navbar" id="app-navbar">
+        <div class="app-navbar-inner">
+            <a href="/" class="brand-link" data-enhanced-nav="true">
+                <span class="brand-badge"><i class="fa-solid fa-chart-line"></i></span>
+                <span class="brand-text">HabitFlow</span>
             </a>
-            <ul class="nav-menu">
-                <li class="nav-item">
-                    <a href="/" class="nav-link {% if current_page == 'home' %}active{% endif %}">
-                        <i class="fas fa-home"></i> Главная
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="/tasks" class="nav-link {% if current_page == 'tasks' %}active{% endif %}">
-                        <i class="fas fa-tasks"></i> Задачи
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="/habits" class="nav-link {% if current_page == 'habits' %}active{% endif %}">
-                        <i class="fas fa-sync-alt"></i> Привычки
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="/stats" class="nav-link {% if current_page == 'stats' %}active{% endif %}">
-                        <i class="fas fa-chart-pie"></i> Статистика
-                    </a>
-                </li>
+
+            <div class="nav-links">
+                <a href="/tasks" class="nav-link {% if current_page == 'tasks' %}active{% endif %}" data-enhanced-nav="true">
+                    <i class="fa-regular fa-circle-check"></i>
+                    <span class="nav-link-text">Задачи</span>
+                </a>
+                <a href="/habits" class="nav-link {% if current_page == 'habits' %}active{% endif %}" data-enhanced-nav="true">
+                    <i class="fa-solid fa-arrow-trend-up"></i>
+                    <span class="nav-link-text">Привычки</span>
+                </a>
+                <a href="/stats" class="nav-link {% if current_page == 'stats' %}active{% endif %}" data-enhanced-nav="true">
+                    <i class="fa-solid fa-chart-column"></i>
+                    <span class="nav-link-text">Статистика</span>
+                </a>
+            </div>
+
+            <div class="nav-side">
+                <button
+                    type="button"
+                    class="btn-icon theme-toggle"
+                    data-theme-toggle="true"
+                    title="Переключить тему"
+                    aria-label="Переключить тему"
+                >
+                    <i class="fa-solid fa-moon"></i>
+                    <span class="visually-hidden">Переключить тему</span>
+                </button>
+
                 {% if current_user %}
-                <li class="nav-item">
-                    <details class="nav-user-menu">
-                        <summary class="nav-link nav-user-trigger" title="{{ current_user.email }}">
-                            <i class="fas fa-user-circle"></i> {{ current_user_display_name or current_user.email }}
-                        </summary>
-                        <div class="nav-user-dropdown">
-                            <form method="post" action="/auth/logout" class="nav-logout-form">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                <input type="hidden" name="next" value="/">
-                                <button type="submit" class="nav-dropdown-action">
-                                    <i class="fas fa-sign-out-alt"></i> Выход
-                                </button>
-                            </form>
-                        </div>
-                    </details>
-                </li>
+                <details class="nav-user-menu">
+                    <summary class="nav-user-trigger" title="{{ current_user.email }}">
+                        <span class="nav-avatar">{{ user_initial }}</span>
+                        <span class="nav-user-copy">
+                            <span class="nav-user-label">Пользователь</span>
+                            <span class="nav-user-name">{{ current_user_display_name or current_user.email }}</span>
+                        </span>
+                        <i class="fa-solid fa-chevron-down nav-user-chevron"></i>
+                    </summary>
+                    <div class="nav-user-dropdown">
+                        <a href="/themes" class="nav-dropdown-link" data-enhanced-nav="true">
+                            <i class="fa-solid fa-palette"></i>
+                            <span>Мои темы</span>
+                        </a>
+                        <a href="/stats" class="nav-dropdown-link" data-enhanced-nav="true">
+                            <i class="fa-solid fa-chart-column"></i>
+                            <span>Сводка</span>
+                        </a>
+                        <button type="button" class="nav-dropdown-action" data-theme-toggle="true">
+                            <i class="fa-solid fa-circle-half-stroke"></i>
+                            <span>Переключить тему</span>
+                            <span class="nav-theme-status" data-theme-label="true">Светлая</span>
+                        </button>
+                        <div class="nav-dropdown-divider"></div>
+                        <form method="post" action="/auth/logout" class="nav-logout-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <input type="hidden" name="next" value="/">
+                            <button type="submit" class="nav-dropdown-action">
+                                <i class="fa-solid fa-right-from-bracket"></i>
+                                <span>Выход</span>
+                            </button>
+                        </form>
+                    </div>
+                </details>
                 {% else %}
-                <li class="nav-item">
-                    <a href="/auth/login?next={{ next_target|urlencode }}" class="nav-link {% if current_page == 'login' %}active{% endif %}">
-                        <i class="fas fa-sign-in-alt"></i> Вход
-                    </a>
-                </li>
+                <a href="/auth/login?next={{ next_target|urlencode }}" class="btn guest-login-link" data-enhanced-nav="true">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span class="nav-link-text">Вход</span>
+                </a>
                 {% endif %}
-            </ul>
+            </div>
         </div>
     </nav>
 
-    <!-- Основной контент -->
-    <main class="main-container {% if hide_sidebar %}main-container-full{% endif %}">
-        <!-- Левая боковая панель -->
-        {% if not hide_sidebar %}
-        <aside class="sidebar">
-            {% block sidebar %}
-            <div class="sidebar-section">
-                <div class="sidebar-header">
-                    <h3><i class="fas fa-tags"></i>Темы</h3>
-                    <a href="/themes" class="btn-link">Настроить</a>
-                </div>
-                <ul class="topic-list">
-                    {% for topic in themes %}
-                    <li class="topic-item {% if topic.is_active %}active{% endif %}">
-                        <a href="?theme={{ topic.name }}" class="theme-filter-link topic-link" data-theme-id="{{ topic.id }}">
-                            <i class="fas fa-circle" style="color: {{ topic.color }};"></i>
+    <main class="app-shell-main" id="app-shell-main">
+        <div class="app-shell-layout {% if hide_sidebar %}full-width{% endif %}">
+            {% if not hide_sidebar %}
+            <aside class="page-sidebar">
+                {% block sidebar %}
+                <section class="surface-card sidebar-card">
+                    <div class="sidebar-header">
+                        <h2 class="sidebar-title"><i class="fa-solid fa-swatchbook"></i> Темы</h2>
+                        <a href="/themes" class="sidebar-action" data-enhanced-nav="true">Настроить</a>
+                    </div>
+                    <div class="theme-filter-list">
+                        {% for topic in themes %}
+                        <a
+                            href="?theme={{ topic.name|urlencode }}"
+                            class="theme-filter-link {% if topic.is_active %}active{% endif %}"
+                            data-theme-id="{{ topic.id }}"
+                            data-enhanced-nav="true"
+                        >
+                            <span class="theme-dot" style="background: {{ topic.color }};"></span>
                             <span>{{ topic.name }}</span>
                         </a>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
+                        {% endfor %}
+                    </div>
+                </section>
 
-            <div class="sidebar-section">
-                <h3><i class="fas fa-chart-bar"></i> Статистика</h3>
-                <div class="stats">
-                    <div class="stat-item">
-                        <span class="stat-value" id="stat-active-tasks">{{ stats.active_tasks }}</span>
-                        <span class="stat-label">активных задач</span>
+                <section class="surface-card sidebar-card">
+                    <div class="sidebar-header">
+                        <h2 class="sidebar-title"><i class="fa-solid fa-chart-pie"></i> Статистика</h2>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-value" id="stat-total-habits">{{ stats.total_habits|default(0) }}</span>
-                        <span class="stat-label">привычек</span>
+                    <div class="sidebar-stats">
+                        <div class="sidebar-stat">
+                            <span class="sidebar-stat-value" id="stat-active-tasks">{{ stats_data.active_tasks|default(0) }}</span>
+                            <span class="sidebar-stat-copy">активных задач</span>
+                        </div>
+                        <div class="sidebar-stat">
+                            <span class="sidebar-stat-value" id="stat-total-habits">{{ stats_data.total_habits|default(0) }}</span>
+                            <span class="sidebar-stat-copy">привычек всего</span>
+                        </div>
+                        <div class="sidebar-stat">
+                            <span class="sidebar-stat-value" id="stat-active-habits">{{ stats_data.active_habits|default(0) }}</span>
+                            <span class="sidebar-stat-copy">активных привычек</span>
+                        </div>
+                        <div class="sidebar-stat">
+                            <span class="sidebar-stat-value" id="stat-due-habits-today">{{ stats_data.due_habits_today|default(0) }}</span>
+                            <span class="sidebar-stat-copy">на сегодня</span>
+                        </div>
+                        <div class="sidebar-progress">
+                            <div class="sidebar-progress-track">
+                                <span class="sidebar-progress-fill" style="width: {{ success_rate }}%; background: {{ success_color }};"></span>
+                            </div>
+                            <div class="sidebar-progress-copy">
+                                <span
+                                    id="stat-success-rate"
+                                    style="color: {{ success_color }};"
+                                    data-due-habits-today="{{ stats_data.due_habits_today|default(0) }}"
+                                    data-completed-habits-today="{{ stats_data.completed_habits_today|default(0) }}"
+                                >{{ success_rate }}%</span>
+                                <span class="sidebar-stat-copy">успех сегодня</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-value" id="stat-active-habits">{{ stats.active_habits|default(0) }}</span>
-                        <span class="stat-label">активных привычек</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value" id="stat-due-habits-today">{{ stats.due_habits_today|default(0) }}</span>
-                        <span class="stat-label">привычек на сегодня</span>
-                    </div>
-                    <div class="stat-item">
-                        <span
-                            class="stat-value"
-                            id="stat-success-rate"
-                            data-due-habits-today="{{ stats.due_habits_today|default(0) }}"
-                            data-completed-habits-today="{{ stats.completed_habits_today|default(0) }}"
-                        >{{ stats.success_rate }}%</span>
-                        <span class="stat-label">успех</span>
-                    </div>
-                </div>
+                </section>
+                {% endblock %}
+            </aside>
+            {% else %}
+            <div class="sidebar-stats-hidden" aria-hidden="true">
+                <span id="stat-active-tasks">{{ stats_data.active_tasks|default(0) }}</span>
+                <span id="stat-total-habits">{{ stats_data.total_habits|default(0) }}</span>
+                <span id="stat-active-habits">{{ stats_data.active_habits|default(0) }}</span>
+                <span id="stat-due-habits-today">{{ stats_data.due_habits_today|default(0) }}</span>
+                <span
+                    id="stat-success-rate"
+                    data-due-habits-today="{{ stats_data.due_habits_today|default(0) }}"
+                    data-completed-habits-today="{{ stats_data.completed_habits_today|default(0) }}"
+                >{{ success_rate }}%</span>
             </div>
-            {% endblock %}
-        </aside>
-        {% else %}
-        {# When sidebar is hidden (e.g. lists/forms), keep the stat DOM in the page.
-           Some client-side features (and integration tests) rely on these element ids. #}
-        {% if stats is defined %}
-        <div class="sidebar-stats-hidden" aria-hidden="true">
-            <div class="stats">
-                <div class="stat-item">
-                    <span class="stat-value" id="stat-active-tasks">{{ stats.active_tasks|default(0) }}</span>
-                    <span class="stat-label">активных задач</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value" id="stat-total-habits">{{ stats.total_habits|default(0) }}</span>
-                    <span class="stat-label">привычек</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value" id="stat-active-habits">{{ stats.active_habits|default(0) }}</span>
-                    <span class="stat-label">активных привычек</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value" id="stat-due-habits-today">{{ stats.due_habits_today|default(0) }}</span>
-                    <span class="stat-label">привычек на сегодня</span>
-                </div>
-                <div class="stat-item">
-                    <span
-                        class="stat-value"
-                        id="stat-success-rate"
-                        data-due-habits-today="{{ stats.due_habits_today|default(0) }}"
-                        data-completed-habits-today="{{ stats.completed_habits_today|default(0) }}"
-                    >{{ stats.success_rate|default(0) }}%</span>
-                    <span class="stat-label">успех</span>
-                </div>
-            </div>
+            {% endif %}
+
+            <section class="page-content" id="page-content">
+                {% block content %}{% endblock %}
+            </section>
         </div>
-        {% endif %}
-        {% endif %}
-
-        <!-- Правая основная часть -->
-        <section class="content">
-            {% block content %}
-            <!-- Этот блок будет переопределен в дочерних шаблонах -->
-            {% endblock %}
-        </section>
     </main>
 
     <script src="{{ url_for('static', path='/js/shared.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/ui.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/forms.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/habit_form.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/update.js') }}"></script>
     <script src="{{ url_for('static', path='/js/main.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/list_tasks.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/list_habits.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/list_themes.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/auth_validation.js') }}"></script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

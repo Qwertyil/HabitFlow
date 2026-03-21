@@ -2,82 +2,51 @@
 
 {% block content %}
 <div class="form-page">
-    <div class="form-container">
-
-        <!-- Заголовок формы -->
-        <div class="form-header">
-            <div class="form-icon-wrapper">
-                {% block form_icon %}<i class="fas fa-plus"></i>{% endblock %}
-            </div>
-            <div class="form-title">
-                <h1>{% block form_heading %}Форма{% endblock %}</h1>
+    <div class="form-shell">
+        <header class="surface-card form-header-card">
+            <span class="form-icon">
+                {% block form_icon %}<i class="fa-solid fa-plus"></i>{% endblock %}
+            </span>
+            <div>
+                <h1 class="form-title-text">{% block form_heading %}Форма{% endblock %}</h1>
                 <p class="form-description">{% block form_description %}Описание формы{% endblock %}</p>
             </div>
-        </div>
+        </header>
 
-        <!-- Сообщения об ошибках -->
         {% if error_message %}
         <div class="alert alert-error">
-            <i class="fas fa-exclamation-circle"></i>
+            <i class="fa-solid fa-circle-exclamation"></i>
             <span>{{ error_message }}</span>
         </div>
         {% endif %}
 
-        <!-- Основная форма -->
         <form class="item-form" method="{% block form_method %}post{% endblock %}" action="{% block form_action %}#{% endblock %}" novalidate>
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <!-- Блок для основной информации -->
-            <div class="form-section">
+
+            <section class="surface-card form-section">
                 <div class="section-header">
-                    <i class="fas fa-info-circle"></i>
+                    <i class="fa-solid fa-circle-info"></i>
                     <h3>Основная информация</h3>
                 </div>
-                {% block basic_fields %}
-                <div class="form-group">
-                    <label for="name">
-                        <i class="fas fa-heading"></i>
-                        Название *
-                    </label>
-                    <input type="text" id="name" name="name" required
-                           placeholder="Введите название" class="form-control">
-                    <div class="form-hint">Минимум 3 символа, максимум 100</div>
-                </div>
+                {% block basic_fields %}{% endblock %}
+            </section>
 
-                <div class="form-group">
-                    <label for="description">
-                        <i class="fas fa-align-left"></i>
-                        Описание
-                    </label>
-                    <textarea id="description" name="description" rows="3"
-                              placeholder="Дополнительное описание..." class="form-control"></textarea>
-                    <div class="form-hint">Необязательное поле, максимум 500 символов</div>
-                </div>
-                {% endblock %}
-            </div>
-
-            <!-- Блок для специфичных полей -->
             {% block specific_fields %}{% endblock %}
-
-            <!-- Блок для дополнительных настроек -->
             {% block additional_fields %}{% endblock %}
 
-            <!-- Действия формы -->
             <div class="form-actions">
-                <a href="{% block cancel_url %}/{% endblock %}" class="btn btn-outline btn-large">
-                    <i class="fas fa-arrow-left"></i>
+                <a href="{% block cancel_url %}/{% endblock %}" class="btn btn-outline" data-enhanced-nav="true">
+                    <i class="fa-solid fa-arrow-left"></i>
                     Назад
                 </a>
                 <div class="action-buttons">
-                    <button type="submit" class="btn btn-primary btn-large">
-                        {% block submit_icon %}<i class="fas fa-plus"></i>{% endblock %}
-                        {% block submit_text %}Создать{% endblock %}
+                    <button type="submit" class="btn btn-primary">
+                        {% block submit_icon %}<i class="fa-solid fa-check"></i>{% endblock %}
+                        {% block submit_text %}Сохранить{% endblock %}
                     </button>
                 </div>
             </div>
         </form>
     </div>
 </div>
-
-<!-- Подключаем скрипты для форм -->
-<script src="{{ url_for('static', path='/js/forms.js') }}"></script>
 {% endblock %}

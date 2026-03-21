@@ -1,58 +1,48 @@
 {% extends "base_form.html" %}
 
 {% block title %}Новая тема - HabitFlow{% endblock %}
-
-{% block form_icon %}<i class="fas fa-tag"></i>{% endblock %}
+{% block form_icon %}<i class="fa-solid fa-palette"></i>{% endblock %}
 {% block form_heading %}Создание темы{% endblock %}
-{% block form_description %}Создайте новую тему для организации ваших задач и привычек{% endblock %}
+{% block form_description %}Новая тема сразу станет частью общего фильтра в sidebar и списках.{% endblock %}
 {% block form_action %}/themes{% endblock %}
 
 {% block basic_fields %}
 <div class="form-group">
-    <label for="name">
-        <i class="fas fa-tag"></i>
-        Название темы *
-    </label>
-    <input type="text" id="name" name="name" maxlength="24" required
-           placeholder="Например: Работа, Здоровье, Хобби" class="form-control">
-    <div class="form-hint">Укажите категорию для группировки задач и привычек</div>
+    <label for="name"><i class="fa-solid fa-heading"></i> Название темы *</label>
+    <input type="text" id="name" name="name" maxlength="24" required class="input-control" placeholder="Например: Работа, Здоровье, Дом">
+    <p class="form-hint">До 24 символов, без дубликатов внутри одного аккаунта.</p>
 </div>
 {% endblock %}
 
 {% block specific_fields %}
-<div class="form-section">
+<section class="surface-card form-section">
     <div class="section-header">
-        <i class="fas fa-paint-brush"></i>
-        <h3>Внешний вид</h3>
+        <i class="fa-solid fa-droplet"></i>
+        <h3>Цвет</h3>
     </div>
-
-    <div class="form-group">
-        <label>
-            <i class="fas fa-fill-drip"></i>
-            Цвет темы
+    <div class="selection-grid themes">
+        <label class="selection-option">
+            <input type="radio" id="color-random" name="color" value="randoms" checked>
+            <span class="selection-card">
+                <span class="selection-icon"><i class="fa-solid fa-dice"></i></span>
+                <span class="selection-title">Случайный</span>
+                <span class="selection-meta">Пусть система выберет</span>
+            </span>
         </label>
-        <div class="color-picker-container">
-            <div class="color-picker">
-                <div class="color-option">
-                    <input type="radio" id="color-random" name="color" value="randoms" checked>
-                    <label for="color-random" class="random-color-label">
-                        <i class="fas fa-dice"></i>
-                    </label>
-                </div>
-                {% for color in colors %}
-                <div class="color-option">
-                    <input type="radio" id="color-{{ loop.index }}" name="color"
-                           value="{{ color }}">
-                    <label for="color-{{ loop.index }}" style="background-color: {{ color }};">
-                    </label>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
+        {% for color in colors %}
+        <label class="selection-option">
+            <input type="radio" id="color-{{ loop.index }}" name="color" value="{{ color }}">
+            <span class="selection-card">
+                <span class="selection-dot" style="width: 18px; height: 18px; background: {{ color }};"></span>
+                <span class="selection-title">{{ color }}</span>
+                <span class="selection-meta">Цвет темы</span>
+            </span>
+        </label>
+        {% endfor %}
     </div>
-</div>
+</section>
 {% endblock %}
 
 {% block cancel_url %}/themes{% endblock %}
-{% block submit_icon %}<i class="fas fa-plus"></i>{% endblock %}
+{% block submit_icon %}<i class="fa-solid fa-plus"></i>{% endblock %}
 {% block submit_text %}Создать тему{% endblock %}

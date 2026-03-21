@@ -52,6 +52,7 @@ async def stats_page(
     context.update(
         {
             "current_page": "stats",
+            "hide_sidebar": True,
             "page_data": page_data,
         }
     )

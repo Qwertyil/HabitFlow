@@ -1,66 +1,49 @@
 {% extends "base_form.html" %}
 
 {% block title %}Обновление темы - HabitFlow{% endblock %}
-
-{% block form_icon %}<i class="fas fa-tag"></i> {% endblock %}
-
+{% block form_icon %}<i class="fa-solid fa-palette"></i>{% endblock %}
 {% block form_heading %}Обновление темы {{ theme_name }}{% endblock %}
-
-{% block form_description %}Введите новое название темы для организации ваших задач и привычек{% endblock %}
-
+{% block form_description %}Обновите название и цвет, чтобы тема оставалась читаемой во всех фильтрах и карточках.{% endblock %}
 {% block form_method %}put{% endblock %}
-
-{% block name_content %} {{ theme_name }} {% endblock %}
+{% block form_action %}/themes/{{ theme_id }}{% endblock %}
 
 {% block basic_fields %}
 <div class="form-group">
-    <label for="name">
-        <i class="fas fa-tag"></i>
-        Название темы *
-    </label>
-    <input type="text" id="name" name="name" value="{{ theme_name }}"
-           placeholder="Например: Работа, Здоровье, Хобби" class="form-control">
-    <div class="form-hint">Укажите категорию для группировки задач и привычек</div>
+    <label for="name"><i class="fa-solid fa-heading"></i> Название темы *</label>
+    <input type="text" id="name" name="name" value="{{ theme_name }}" class="input-control" maxlength="24" required>
+    <p class="form-hint">До 24 символов, без конфликта с существующими темами.</p>
 </div>
 {% endblock %}
 
 {% block specific_fields %}
-<div class="form-section">
+<section class="surface-card form-section">
     <div class="section-header">
-        <i class="fas fa-paint-brush"></i>
-        <h3>Внешний вид</h3>
+        <i class="fa-solid fa-droplet"></i>
+        <h3>Цвет</h3>
     </div>
-
-    <div class="form-group">
-        <label>
-            <i class="fas fa-fill-drip"></i>
-            Цвет темы
+    <div class="selection-grid themes">
+        {% for color in colors %}
+        <label class="selection-option">
+            <input type="radio" id="color-{{ loop.index }}" name="color" value="{{ color }}" {% if loop.first %}checked{% endif %}>
+            <span class="selection-card">
+                <span class="selection-dot" style="width: 18px; height: 18px; background: {{ color }};"></span>
+                <span class="selection-title">{{ color }}</span>
+                <span class="selection-meta">Цвет темы</span>
+            </span>
         </label>
-        <div class="color-picker-container">
-            <div class="color-picker">
-                {% for color in colors %}
-                <div class="color-option">
-                    <input type="radio" id="color-{{ loop.index }}" name="color"
-                            value="{{ color }}" {% if loop.first %}checked{% endif %}>
-                    <label for="color-{{ loop.index }}" style="background-color: {{ color }};">
-                    </label>
-                </div>
-                {% endfor %}
-                <div class="color-option">
-                    <input type="radio" id="color-random" name="color" value="randoms">
-                    <label for="color-random" class="random-color-label">
-                        <i class="fas fa-dice"></i>
-                    </label>
-                </div>
-            </div>
-        </div>
+        {% endfor %}
+        <label class="selection-option">
+            <input type="radio" id="color-random" name="color" value="randoms">
+            <span class="selection-card">
+                <span class="selection-icon"><i class="fa-solid fa-dice"></i></span>
+                <span class="selection-title">Случайный</span>
+                <span class="selection-meta">Подобрать заново</span>
+            </span>
+        </label>
     </div>
-</div>
-<script src="{{ url_for('static', path='/js/update.js') }}"></script>
+</section>
 {% endblock %}
 
-{% block form_action %}/themes/{{ theme_id }}{% endblock %}
-
 {% block cancel_url %}/themes{% endblock %}
-
-{% block submit_text %}Обновить тему{% endblock %}
+{% block submit_icon %}<i class="fa-solid fa-floppy-disk"></i>{% endblock %}
+{% block submit_text %}Сохранить тему{% endblock %}

@@ -2,18 +2,25 @@
 
 {% block content %}
 <div class="list-page">
-    <div class="page-header">
-        <h1>
-            {% block page_icon %}{% endblock %}
-            {% block page_title %}Список{% endblock %}
-        </h1>
-        <a href="{% block create_url %}#{% endblock %}" class="btn btn-primary">
-            <i class="fas fa-plus"></i>
-            {% block create_button_text %}Добавить{% endblock %}
-        </a>
+    <header class="surface-card page-header-card">
+        <div>
+            <h1 class="page-title">
+                {% block page_icon %}{% endblock %}
+                {% block page_title %}Список{% endblock %}
+            </h1>
+            <p class="page-lead">{% block page_lead %}Управляйте своими записями без лишнего шума.{% endblock %}</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% block create_url %}#{% endblock %}" class="btn btn-primary" data-enhanced-nav="true">
+                <i class="fa-solid fa-plus"></i>
+                {% block create_button_text %}Добавить{% endblock %}
+            </a>
+        </div>
+    </header>
 
-        {% if current_page in ['tasks', 'habits'] %}
-        <div class="list-theme-bar" aria-label="Фильтр по темам">
+    {% if current_page in ['tasks', 'habits'] %}
+    <section class="surface-card filter-card">
+        <div class="theme-pill-row" aria-label="Фильтр по темам">
             {% for topic in themes %}
             {% set theme_query = namespace(parts=[]) %}
             {% for key, value in request.query_params.multi_items() %}
@@ -24,23 +31,22 @@
             {% set theme_query.parts = theme_query.parts + ['theme=' ~ (topic.name|urlencode)] %}
             <a
                 href="?{{ theme_query.parts|join('&') }}"
-                class="theme-filter-link theme-filter-pill {% if topic.is_active %}active{% endif %}"
+                class="theme-filter-pill {% if topic.is_active %}active{% endif %} theme-filter-link"
                 data-theme-id="{{ topic.id }}"
+                data-enhanced-nav="true"
             >
-                <i class="fas fa-circle" style="color: {{ topic.color }};"></i>
+                <span class="theme-dot" style="background: {{ topic.color }};"></span>
                 <span>{{ topic.name }}</span>
             </a>
             {% endfor %}
         </div>
-        {% endif %}
-    </div>
+    </section>
+    {% endif %}
 
     {% block filters %}{% endblock %}
 
-    <div class="list-container">
-        {% block list_content %}
-        <!-- Контент списка будет здесь -->
-        {% endblock %}
-    </div>
+    <section class="list-container">
+        {% block list_content %}{% endblock %}
+    </section>
 </div>
 {% endblock %}
