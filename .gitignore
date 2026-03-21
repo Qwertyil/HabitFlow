@@ -6,3 +6,6 @@ coverage.xml
 junit.xml
 htmlcov/
 .venv/
+output/
+poetry.toml
+%SystemDrive%/
