@@ -14,31 +14,32 @@
   padding: 0 24px;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 22px;
 }
 
 .brand-link {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   color: #fff;
   flex-shrink: 0;
 }
 
 .brand-badge {
-  width: 30px;
-  height: 30px;
+  width: 38px;
+  height: 38px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: 12px;
   background: linear-gradient(135deg, var(--accent), var(--mint));
   box-shadow: 0 10px 24px rgba(108, 99, 255, 0.28);
+  font-size: 16px;
 }
 
 .brand-text {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 800;
   letter-spacing: -0.02em;
 }
 
@@ -46,22 +47,26 @@
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .nav-link {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 0 14px;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 16px;
   border-radius: 999px;
   color: rgba(255, 255, 255, 0.68);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   transition:
     background-color 140ms ease,
     color 140ms ease;
+}
+
+.nav-link i {
+  font-size: 15px;
 }
 
 .nav-link:hover {
@@ -77,17 +82,21 @@
 .nav-side {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .theme-toggle {
-  min-width: 42px;
-  min-height: 42px;
-  padding: 0 12px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
   border-radius: 999px;
   color: rgba(255, 255, 255, 0.86);
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.theme-toggle i {
+  font-size: 16px;
 }
 
 .theme-toggle:hover {
@@ -95,15 +104,22 @@
 }
 
 .guest-login-link {
-  min-height: 40px;
-  padding: 0 16px;
+  min-height: 44px;
+  padding: 0 14px;
   color: #fff;
   background: rgba(108, 99, 255, 0.22);
   border: 1px solid rgba(139, 132, 255, 0.34);
+  font-size: 14px;
+  font-weight: 700;
+  gap: 8px;
 }
 
 .guest-login-link:hover {
   background: rgba(108, 99, 255, 0.32);
+}
+
+.guest-login-link i {
+  font-size: 14px;
 }
 
 .nav-user-menu {
@@ -122,8 +138,8 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  min-height: 42px;
-  padding: 4px 8px 4px 6px;
+  min-height: 44px;
+  padding: 4px 10px 4px 6px;
   border-radius: 999px;
   color: rgba(255, 255, 255, 0.9);
   background: rgba(255, 255, 255, 0.08);
@@ -137,8 +153,8 @@
 }
 
 .nav-avatar {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -167,7 +183,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .nav-user-chevron {
@@ -230,8 +247,7 @@
 
   .brand-text,
   .nav-link-text,
-  .nav-user-copy,
-  .theme-toggle-text {
+  .nav-user-copy {
     display: none;
   }
 
@@ -241,8 +257,8 @@
   }
 
   .nav-link {
-    min-width: 38px;
-    min-height: 38px;
+    min-width: 42px;
+    min-height: 42px;
     padding: 0;
     justify-content: center;
   }

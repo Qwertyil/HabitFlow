@@ -402,11 +402,11 @@ Screenshots are captured with demo data (themes, tasks, habits, partial task com
 
 - `docs/README.md` for documentation map and file roles
 - `docs/overview.mdc` for project context and architecture principles
-- `docs/theme-system.md` for the theme-token SSOT and runtime theme-switch contract
+- `docs/contracts/theme-system.md` for the theme-token SSOT and runtime theme-switch contract
 - `docs/project/overview.md` for the live HabitFlow lab task dashboard
 - `docs/project/startup.md` for new-session handoff and current workspace state
-- `docs/api_contract.mdc` for current HTTP contracts
-- `docs/session_contract.mdc` for auth and session behavior
+- `docs/contracts/api_contract.mdc` for current HTTP contracts
+- `docs/contracts/session_contract.mdc` for auth and session behavior
 
 ## Next Steps
 

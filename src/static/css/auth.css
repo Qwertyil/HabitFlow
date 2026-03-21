@@ -1,8 +1,21 @@
+body[data-page="login"],
+body[data-page="register"] {
+  overflow: hidden;
+}
+
+.auth-page {
+  position: fixed;
+  inset: var(--nav-h) 0 0;
+  z-index: 1100;
+}
+
 .auth-shell {
-  min-height: calc(100vh - var(--nav-h) - 48px);
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
-  padding: 36px 16px 60px;
+  padding: 20px 16px 24px;
+  overflow: auto;
 }
 
 .auth-card {
@@ -11,6 +24,36 @@
   display: grid;
   gap: 18px;
   padding: 34px 34px 30px;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.auth-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 19, 36, 0.38);
+  backdrop-filter: blur(10px);
+}
+
+.auth-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  z-index: 2;
+}
+
+.auth-close:hover {
+  color: var(--text);
+  background: var(--surface);
 }
 
 .auth-card::before {
@@ -175,8 +218,17 @@
 }
 
 @media (max-width: 760px) {
+  .auth-shell {
+    padding: 0;
+    align-items: end;
+  }
+
   .auth-card {
+    width: min(100%, 100vw);
+    border-radius: 20px 20px 0 0;
     padding: 22px 18px 20px;
+    max-height: calc(100dvh - var(--nav-h) - 8px);
+    overflow: auto;
   }
 
   .auth-card-header h1 {

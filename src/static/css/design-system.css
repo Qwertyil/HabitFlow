@@ -58,6 +58,8 @@ html[data-ui-theme="dark"] {
 
 html {
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+  overflow-y: auto;
 }
 
 body {
@@ -129,8 +131,8 @@ img {
   border: 1px solid transparent;
   border-radius: 999px;
   padding: 0 16px;
-  min-height: 42px;
-  font-size: 13px;
+  min-height: 44px;
+  font-size: 14px;
   font-weight: 600;
   line-height: 1;
   transition:
@@ -204,13 +206,13 @@ img {
 .btn-sm,
 .btn-icon,
 .page-link {
-  min-height: 36px;
-  padding: 0 12px;
-  font-size: 12px;
+  min-height: 38px;
+  padding: 0 13px;
+  font-size: 13px;
 }
 
 .btn-icon {
-  min-width: 36px;
+  min-width: 38px;
   padding: 0;
 }
 
