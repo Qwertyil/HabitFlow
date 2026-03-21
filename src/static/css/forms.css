@@ -264,6 +264,10 @@
   border-radius: 16px;
 }
 
+.alert[hidden] {
+  display: none !important;
+}
+
 .alert-error {
   color: #c93d3d;
   background: rgba(255, 107, 107, 0.08);
