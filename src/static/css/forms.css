@@ -258,10 +258,15 @@
 
 .alert {
   display: flex;
-  align-items: start;
+  align-items: center;
   gap: 10px;
   padding: 14px 16px;
   border-radius: 16px;
+}
+
+.alert i {
+  flex: 0 0 auto;
+  line-height: 1;
 }
 
 .alert[hidden] {
