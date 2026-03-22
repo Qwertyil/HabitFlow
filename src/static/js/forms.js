@@ -140,7 +140,7 @@ function runRequiredValidation(form) {
             isValid = false;
             firstInvalidField ||= field;
         }
-    }); 
+    });
 
     return {
         isValid,
