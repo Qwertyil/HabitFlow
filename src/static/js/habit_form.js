@@ -83,6 +83,26 @@ function initHabitForm(root = document) {
         };
     }
 
+    function getScheduleErrorTarget() {
+        const currentValue = scheduleTypeSelect.value;
+        return blocks[currentValue] || scheduleTypeSelect;
+    }
+
+    function validatePeriod() {
+        const startsOn = root.querySelector("#starts_on")?.value;
+        const endsOn = root.querySelector("#ends_on")?.value;
+
+        if (startsOn && endsOn && endsOn < startsOn) {
+            return {
+                isValid: false,
+                message: "Дата конца периода не может быть раньше даты начала.",
+                target: endsOnInput || scheduleTypeSelect,
+            };
+        }
+
+        return { isValid: true };
+    }
+
     toggleBlocks();
     togglePeriod();
 
@@ -93,28 +113,18 @@ function initHabitForm(root = document) {
         try {
             const config = buildScheduleConfig();
             scheduleConfigInput.value = JSON.stringify(config);
-            const startsOn = root.querySelector("#starts_on")?.value;
-            const endsOn = root.querySelector("#ends_on")?.value;
-            if (startsOn && endsOn && endsOn < startsOn) {
-                throw new Error("Дата конца периода не может быть раньше даты начала.");
-            }
-
-            return { isValid: true };
         } catch (error) {
-            const target =
-                scheduleTypeSelect.value === "weekly_days"
-                    ? blocks.weekly_days
-                    : root.querySelector("#ends_on") || scheduleTypeSelect;
-
             return {
                 isValid: false,
                 message:
                     error instanceof Error
                         ? error.message
                         : "Проверьте параметры привычки.",
-                target,
+                target: getScheduleErrorTarget(),
             };
         }
+
+        return validatePeriod();
     });
 }
 

@@ -63,11 +63,26 @@
                 : type === "error"
                   ? "fa-circle-exclamation"
                   : "fa-circle-info";
-        notification.innerHTML = `
-            <span class="notification-icon"><i class="fa-solid ${iconName}"></i></span>
-            <span>${message}</span>
-            <button type="button" class="notification-close" aria-label="Закрыть"><i class="fa-solid fa-xmark"></i></button>
-        `;
+        const iconSpan = document.createElement("span");
+        iconSpan.className = "notification-icon";
+        const iconEl = document.createElement("i");
+        iconEl.className = `fa-solid ${iconName}`;
+        iconSpan.appendChild(iconEl);
+
+        const msgSpan = document.createElement("span");
+        msgSpan.textContent = message;
+
+        const closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "notification-close";
+        closeBtn.setAttribute("aria-label", "Закрыть");
+        const closeIcon = document.createElement("i");
+        closeIcon.className = "fa-solid fa-xmark";
+        closeBtn.appendChild(closeIcon);
+
+        notification.appendChild(iconSpan);
+        notification.appendChild(msgSpan);
+        notification.appendChild(closeBtn);
         notification
             .querySelector(".notification-close")
             ?.addEventListener("click", () => notification.remove());
