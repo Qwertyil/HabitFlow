@@ -83,25 +83,48 @@ function initHabitForm(root = document) {
         };
     }
 
+    function getScheduleErrorTarget() {
+        const currentValue = scheduleTypeSelect.value;
+        return blocks[currentValue] || scheduleTypeSelect;
+    }
+
+    function validatePeriod() {
+        const startsOn = root.querySelector("#starts_on")?.value;
+        const endsOn = root.querySelector("#ends_on")?.value;
+
+        if (startsOn && endsOn && endsOn < startsOn) {
+            return {
+                isValid: false,
+                message: "Дата конца периода не может быть раньше даты начала.",
+                target: endsOnInput || scheduleTypeSelect,
+            };
+        }
+
+        return { isValid: true };
+    }
+
     toggleBlocks();
     togglePeriod();
 
     scheduleTypeSelect.addEventListener("change", toggleBlocks);
     periodInfiniteCheckbox?.addEventListener("change", togglePeriod);
 
-    form.addEventListener("submit", (event) => {
+    window.HabitFlowForms?.registerValidator(form, () => {
         try {
             const config = buildScheduleConfig();
             scheduleConfigInput.value = JSON.stringify(config);
-            const startsOn = root.querySelector("#starts_on")?.value;
-            const endsOn = root.querySelector("#ends_on")?.value;
-            if (startsOn && endsOn && endsOn < startsOn) {
-                throw new Error("Дата конца периода не может быть раньше даты начала.");
-            }
         } catch (error) {
-            event.preventDefault();
-            showFormError(error instanceof Error ? error.message : "Проверьте параметры привычки.");
+            return {
+                isValid: false,
+                message:
+                    error instanceof Error
+                        ? error.message
+                        : "Проверьте параметры привычки.",
+                target: getScheduleErrorTarget(),
+            };
         }
+
+        return validatePeriod();
     });
 }
 

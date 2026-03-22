@@ -19,8 +19,10 @@ async def test_get_stats_page_smoke(client: AsyncClient) -> None:
     response = await client.get("/stats")
 
     assert_html_response(response, status_code=200)
-    assert "Statistics v2" in response.text
+    assert '<div class="surface-card stats-toolbar">' in response.text
     assert "/stats?range=30d" in response.text
+    assert 'data-stats-target="overview"' in response.text
+    assert 'data-stats-target="themes"' in response.text
     assert 'class="stats-kpi-grid"' in response.text
     assert "Пульс задач" in response.text
     assert "Фокус периода" in response.text

@@ -23,135 +23,155 @@
 {% endif %}
 
 <div class="stats-page">
-    <section class="surface-card stats-header-card">
-        <div class="stats-header-copy">
-            <span class="stats-eyebrow">Statistics v2</span>
-            <h1 class="page-title">Статистика</h1>
-            <p class="page-lead">Смотрите owner-scoped сводку по задачам, привычкам и темам без переключения между разделами.</p>
-            <p class="page-lead">Активный период: <strong>{{ current_period_label }}</strong></p>
-        </div>
+    <div class="surface-card stats-toolbar">
+        <nav class="stats-section-nav" aria-label="Разделы статистики" role="tablist">
+            <button type="button" class="stats-section-nav-link" data-stats-target="overview" role="tab" aria-selected="true">
+                <i class="fa-solid fa-table-cells-large" aria-hidden="true"></i>
+                <span>Обзор</span>
+            </button>
+            <button type="button" class="stats-section-nav-link" data-stats-target="tasks" role="tab" aria-selected="false">
+                <i class="fa-solid fa-list-check" aria-hidden="true"></i>
+                <span>Задачи</span>
+            </button>
+            <button type="button" class="stats-section-nav-link" data-stats-target="habits" role="tab" aria-selected="false">
+                <i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i>
+                <span>Привычки</span>
+            </button>
+            <button type="button" class="stats-section-nav-link" data-stats-target="themes" role="tab" aria-selected="false">
+                <i class="fa-solid fa-palette" aria-hidden="true"></i>
+                <span>Темы</span>
+            </button>
+            <button type="button" class="stats-section-nav-link" data-stats-target="insights" role="tab" aria-selected="false">
+                <i class="fa-solid fa-lightbulb" aria-hidden="true"></i>
+                <span>Инсайты</span>
+            </button>
+        </nav>
         <div class="stats-range-filter" aria-label="Выбор периода статистики">
             <a href="/stats?range=7d" class="stats-range-link {% if page_data.range == '7d' %}active{% endif %}" data-enhanced-nav="true">7 дней</a>
             <a href="/stats?range=30d" class="stats-range-link {% if page_data.range == '30d' %}active{% endif %}" data-enhanced-nav="true">30 дней</a>
         </div>
-    </section>
-
-    <div class="stats-kpi-grid" aria-label="Ключевые показатели статистики">
-        {% for kpi in page_data.kpis %}
-        <article class="surface-card stats-kpi-card stats-kpi-card-{{ kpi.key }}">
-            <div class="stats-kpi-top">
-                <span class="stats-kpi-icon" aria-hidden="true">
-                    {% if kpi.key == "active_tasks" %}
-                    <i class="fa-solid fa-bolt"></i>
-                    {% elif kpi.key == "completed_tasks" %}
-                    <i class="fa-solid fa-check-circle"></i>
-                    {% elif kpi.key == "total_habits" %}
-                    <i class="fa-solid fa-layer-group"></i>
-                    {% elif kpi.key == "active_habits" %}
-                    <i class="fa-solid fa-seedling"></i>
-                    {% elif kpi.key == "due_today" %}
-                    <i class="fa-solid fa-calendar-day"></i>
-                    {% elif kpi.key == "completed_today" %}
-                    <i class="fa-solid fa-flag-checkered"></i>
-                    {% else %}
-                    <i class="fa-solid fa-chart-line"></i>
-                    {% endif %}
-                </span>
-                <span class="stats-kpi-key">{{ kpi.key.replace("_", " ") }}</span>
-            </div>
-            <p class="stats-kpi-label">{{ kpi.label }}</p>
-            <p class="stats-kpi-value">{{ kpi.value }}</p>
-            {% if kpi.hint %}
-            <p class="stats-kpi-hint">{{ kpi.hint }}</p>
-            {% endif %}
-        </article>
-        {% endfor %}
     </div>
 
-    <div class="stats-sections-grid">
-        <section class="surface-card stats-section-card">
-            <div class="stats-section-heading">
-                <div class="card-header">
-                    <h2><i class="fas fa-tasks"></i> Задачи</h2>
-                    <span class="stats-section-tag">{{ current_period_label }}</span>
-                </div>
-                <p>Закрытие задач, скорость выполнения и распределение нагрузки по приоритетам и темам.</p>
-            </div>
-
-            <div class="stats-section-layout">
-                <div class="stats-overview-panel stats-accent-panel stats-accent-panel-tasks">
-                    <div class="stats-overview-copy">
-                        <span class="stats-overview-label">Пульс задач</span>
-                        <strong>{{ page_data.tasks.completion_rate }}%</strong>
-                        <p>Закрыто {{ page_data.tasks.completed }} из {{ page_data.tasks.total }} задач.</p>
-                    </div>
-                    <div class="stats-progress-track"><span style="width: {{ page_data.tasks.completion_rate }}%;"></span></div>
-                    <div class="stats-mini-grid">
-                        <div class="stats-mini-card"><span>Активные</span><strong>{{ page_data.tasks.active }}</strong></div>
-                        <div class="stats-mini-card"><span>Создано</span><strong>{{ current_created_value }}</strong></div>
-                        <div class="stats-mini-card"><span>Завершено</span><strong>{{ current_completed_value }}</strong></div>
-                    </div>
-                </div>
-
-                <div class="stats-summary-grid">
-                    <div class="stats-summary-row"><span>Всего</span><strong>{{ page_data.tasks.total }}</strong></div>
-                    <div class="stats-summary-row"><span>Активные</span><strong>{{ page_data.tasks.active }}</strong></div>
-                    <div class="stats-summary-row"><span>Выполненные</span><strong>{{ page_data.tasks.completed }}</strong></div>
-                    <div class="stats-summary-row"><span>Completion rate</span><strong>{{ page_data.tasks.completion_rate }}%</strong></div>
-                    <div class="stats-summary-row"><span>{% if page_data.range == "30d" %}Создано за 30 дней{% else %}Создано за 7 дней{% endif %}</span><strong>{{ current_created_value }}</strong></div>
-                    <div class="stats-summary-row"><span>{% if page_data.range == "30d" %}Завершено за 30 дней{% else %}Завершено за 7 дней{% endif %}</span><strong>{{ current_completed_value }}</strong></div>
-                    <div class="stats-summary-row"><span>Среднее время до выполнения</span><strong>{% if page_data.tasks.avg_completion_time_hours is not none %}{{ page_data.tasks.avg_completion_time_hours }} ч{% else %}-{% endif %}</strong></div>
-                </div>
-            </div>
-
-            <div class="stats-detail-grid">
-                <article class="stats-detail-card">
-                    <div class="stats-detail-header">
-                        <h3>По приоритетам</h3>
-                        <span>{{ page_data.tasks.total }} задач</span>
-                    </div>
-                    {% if page_data.tasks.total and page_data.tasks.by_priority %}
-                    <div class="stats-ranked-list">
-                        {% for label, value in page_data.tasks.by_priority.items() %}
-                        <div class="stats-ranked-row">
-                            <div class="stats-ranked-meta">
-                                <span>{{ label }}</span>
-                                <strong>{{ value }}</strong>
-                            </div>
-                            <div class="stats-ranked-bar"><span style="width: {{ ((value / page_data.tasks.total) * 100) | round(1) if page_data.tasks.total else 0 }}%;"></span></div>
+    <div class="stats-layout">
+        <div class="stats-content">
+            <section id="stats-overview" class="stats-overview-block stats-panel" data-stats-panel="overview">
+                <div class="stats-kpi-grid" aria-label="Ключевые показатели статистики">
+                    {% for kpi in page_data.kpis %}
+                    <article class="surface-card stats-kpi-card stats-kpi-card-{{ kpi.key }}">
+                        <div class="stats-kpi-top">
+                            <span class="stats-kpi-icon" aria-hidden="true">
+                                {% if kpi.key == "active_tasks" %}
+                                <i class="fa-solid fa-bolt"></i>
+                                {% elif kpi.key == "completed_tasks" %}
+                                <i class="fa-solid fa-check-circle"></i>
+                                {% elif kpi.key == "total_habits" %}
+                                <i class="fa-solid fa-layer-group"></i>
+                                {% elif kpi.key == "active_habits" %}
+                                <i class="fa-solid fa-seedling"></i>
+                                {% elif kpi.key == "due_today" %}
+                                <i class="fa-solid fa-calendar-day"></i>
+                                {% elif kpi.key == "completed_today" %}
+                                <i class="fa-solid fa-flag-checkered"></i>
+                                {% else %}
+                                <i class="fa-solid fa-chart-line"></i>
+                                {% endif %}
+                            </span>
+                            <span class="stats-kpi-key">{{ kpi.key.replace("_", " ") }}</span>
                         </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    {{ render_empty_state("Нет задач для распределения", "Приоритеты появятся здесь после создания задач.", "fa-layer-group") }}
-                    {% endif %}
-                </article>
+                        <p class="stats-kpi-label">{{ kpi.label }}</p>
+                        <p class="stats-kpi-value">{{ kpi.value }}</p>
+                        {% if kpi.hint %}
+                        <p class="stats-kpi-hint">{{ kpi.hint }}</p>
+                        {% endif %}
+                    </article>
+                    {% endfor %}
+                </div>
+            </section>
 
-                <article class="stats-detail-card">
-                    <div class="stats-detail-header">
-                        <h3>По темам</h3>
-                        <span>Текущий срез</span>
-                    </div>
-                    {% if page_data.tasks.by_theme %}
-                    <div class="stats-ranked-list">
-                        {% for label, value in page_data.tasks.by_theme.items() %}
-                        <div class="stats-ranked-row">
-                            <div class="stats-ranked-meta">
-                                <span>{{ label }}</span>
-                                <strong>{{ value }}</strong>
-                            </div>
-                            <div class="stats-ranked-bar"><span style="width: {{ ((value / page_data.tasks.total) * 100) | round(1) if page_data.tasks.total else 0 }}%;"></span></div>
+            <div class="stats-sections-grid">
+                <section id="stats-tasks" class="surface-card stats-section-card stats-panel" data-stats-panel="tasks">
+                    <div class="stats-section-heading">
+                        <div class="card-header">
+                            <h2><i class="fas fa-tasks"></i> Задачи</h2>
+                            <span class="stats-section-tag">{{ current_period_label }}</span>
                         </div>
-                        {% endfor %}
+                        <p>Закрытие задач, скорость выполнения и распределение нагрузки по приоритетам и темам.</p>
                     </div>
-                    {% else %}
-                    {{ render_empty_state("Темы пока пусты", "Названия тем будут показаны здесь вместо UUID.", "fa-tags") }}
-                    {% endif %}
-                </article>
-            </div>
-        </section>
 
-        <section class="surface-card stats-section-card">
+                    <div class="stats-section-layout">
+                        <div class="stats-overview-panel stats-accent-panel stats-accent-panel-tasks">
+                            <div class="stats-overview-copy">
+                                <span class="stats-overview-label">Пульс задач</span>
+                                <strong>{{ page_data.tasks.completion_rate }}%</strong>
+                                <p>Закрыто {{ page_data.tasks.completed }} из {{ page_data.tasks.total }} задач.</p>
+                            </div>
+                            <div class="stats-progress-track"><span style="width: {{ page_data.tasks.completion_rate }}%;"></span></div>
+                            <div class="stats-mini-grid">
+                                <div class="stats-mini-card"><span>Активные</span><strong>{{ page_data.tasks.active }}</strong></div>
+                                <div class="stats-mini-card"><span>Создано</span><strong>{{ current_created_value }}</strong></div>
+                                <div class="stats-mini-card"><span>Завершено</span><strong>{{ current_completed_value }}</strong></div>
+                            </div>
+                        </div>
+
+                        <div class="stats-summary-grid">
+                            <div class="stats-summary-row"><span>Всего</span><strong>{{ page_data.tasks.total }}</strong></div>
+                            <div class="stats-summary-row"><span>Активные</span><strong>{{ page_data.tasks.active }}</strong></div>
+                            <div class="stats-summary-row"><span>Выполненные</span><strong>{{ page_data.tasks.completed }}</strong></div>
+                            <div class="stats-summary-row"><span>Completion rate</span><strong>{{ page_data.tasks.completion_rate }}%</strong></div>
+                            <div class="stats-summary-row"><span>{% if page_data.range == "30d" %}Создано за 30 дней{% else %}Создано за 7 дней{% endif %}</span><strong>{{ current_created_value }}</strong></div>
+                            <div class="stats-summary-row"><span>{% if page_data.range == "30d" %}Завершено за 30 дней{% else %}Завершено за 7 дней{% endif %}</span><strong>{{ current_completed_value }}</strong></div>
+                            <div class="stats-summary-row"><span>Среднее время до выполнения</span><strong>{% if page_data.tasks.avg_completion_time_hours is not none %}{{ page_data.tasks.avg_completion_time_hours }} ч{% else %}-{% endif %}</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="stats-detail-grid">
+                        <article class="stats-detail-card">
+                            <div class="stats-detail-header">
+                                <h3>По приоритетам</h3>
+                                <span>{{ page_data.tasks.total }} задач</span>
+                            </div>
+                            {% if page_data.tasks.total and page_data.tasks.by_priority %}
+                            <div class="stats-ranked-list">
+                                {% for label, value in page_data.tasks.by_priority.items() %}
+                                <div class="stats-ranked-row">
+                                    <div class="stats-ranked-meta">
+                                        <span>{{ label }}</span>
+                                        <strong>{{ value }}</strong>
+                                    </div>
+                                    <div class="stats-ranked-bar"><span style="width: {{ ((value / page_data.tasks.total) * 100) | round(1) if page_data.tasks.total else 0 }}%;"></span></div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            {{ render_empty_state("Нет задач для распределения", "Приоритеты появятся здесь после создания задач.", "fa-layer-group") }}
+                            {% endif %}
+                        </article>
+
+                        <article class="stats-detail-card">
+                            <div class="stats-detail-header">
+                                <h3>По темам</h3>
+                                <span>Текущий срез</span>
+                            </div>
+                            {% if page_data.tasks.by_theme %}
+                            <div class="stats-ranked-list">
+                                {% for label, value in page_data.tasks.by_theme.items() %}
+                                <div class="stats-ranked-row">
+                                    <div class="stats-ranked-meta">
+                                        <span>{{ label }}</span>
+                                        <strong>{{ value }}</strong>
+                                    </div>
+                                    <div class="stats-ranked-bar"><span style="width: {{ ((value / page_data.tasks.total) * 100) | round(1) if page_data.tasks.total else 0 }}%;"></span></div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            {{ render_empty_state("Темы пока пусты", "Названия тем будут показаны здесь вместо UUID.", "fa-tags") }}
+                            {% endif %}
+                        </article>
+                    </div>
+                </section>
+
+                <section id="stats-habits" class="surface-card stats-section-card stats-panel" data-stats-panel="habits">
             <div class="stats-section-heading">
                 <div class="card-header">
                     <h2><i class="fas fa-sync-alt"></i> Привычки</h2>
@@ -277,9 +297,9 @@
                     {% endif %}
                 </article>
             </div>
-        </section>
+                </section>
 
-        <section class="surface-card stats-section-card">
+                <section id="stats-themes" class="surface-card stats-section-card stats-panel" data-stats-panel="themes">
             <div class="stats-section-heading">
                 <div class="card-header">
                     <h2><i class="fas fa-tags"></i> Темы</h2>
@@ -346,9 +366,9 @@
                     {% endif %}
                 </article>
             </div>
-        </section>
+                </section>
 
-        <section class="surface-card stats-section-card">
+                <section id="stats-insights" class="surface-card stats-section-card stats-panel" data-stats-panel="insights">
             <div class="stats-section-heading">
                 <div class="card-header">
                     <h2><i class="fas fa-lightbulb"></i> Инсайты</h2>
@@ -379,7 +399,9 @@
             {% else %}
             {{ render_empty_state("Инсайтов пока нет", "Как только накопятся данные, здесь появятся короткие выводы по прогрессу.", "fa-lightbulb") }}
             {% endif %}
-        </section>
+                </section>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

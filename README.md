@@ -162,6 +162,7 @@ APScheduler
 - Themes with related entity counters
 - Tasks with priorities `low`, `medium`, `high`
 - Habits with multiple recurrence modes: daily, weekly, monthly, yearly, and interval-based
+- Shared light/dark UI themes with a compact navbar switcher
 - Registration, login, logout, and optional Google OAuth
 - Server-rendered web UI with FastAPI + Jinja2
 
@@ -334,7 +335,7 @@ make migration
 make psql
 ```
 
-## Screenshots
+## Screenshots (LEGACY)
 
 Screenshots are captured with demo data (themes, tasks, habits, partial task completions) using `scripts/capture_readme_screenshots.py` so lists and the statistics dashboard look like a real account. **They always reflect whatever app is running at `SCREENSHOT_BASE_URL`.** After changing `src/templates/` or `src/static/`, either rebuild and restart the Docker app (`docker compose build app && docker compose up -d app`) or point `SCREENSHOT_BASE_URL` at local `make run` (default in the script is `http://127.0.0.1:8001`) so PNGs are not stuck on an old image. If `auth/register` is rate-limited, set `SCREENSHOT_EMAIL` / `SCREENSHOT_PASSWORD` for an existing user or retry after a short wait.
 
@@ -399,17 +400,19 @@ Screenshots are captured with demo data (themes, tasks, habits, partial task com
 
 ## Documentation
 
+- `docs/README.md` for documentation map and file roles
 - `docs/overview.mdc` for project context and architecture principles
-- `docs/api_contract.mdc` for current HTTP contracts
-- `docs/session_contract.mdc` for auth and session behavior
+- `docs/contracts/theme-system.md` for the theme-token SSOT and runtime theme-switch contract
+- `docs/project/overview.md` for the live HabitFlow lab task dashboard
+- `docs/project/startup.md` for new-session handoff and current workspace state
+- `docs/contracts/api_contract.mdc` for current HTTP contracts
+- `docs/contracts/session_contract.mdc` for auth and session behavior
 
 ## Next Steps
 
-1. Perform load testing.
+1. Perform UI and e2e testing.
 2. Refactor `main.py` and `utils.py`.
-3. Add user settings:
-   - theme selection for the web UI;
-   - language switching.
+3. Add language switching.
 4. Add quote translation based on the selected language.
 
 ## Current Status

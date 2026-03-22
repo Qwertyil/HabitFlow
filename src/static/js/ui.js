@@ -63,16 +63,94 @@
                 : type === "error"
                   ? "fa-circle-exclamation"
                   : "fa-circle-info";
-        notification.innerHTML = `
-            <span class="notification-icon"><i class="fa-solid ${iconName}"></i></span>
-            <span>${message}</span>
-            <button type="button" class="notification-close" aria-label="Закрыть"><i class="fa-solid fa-xmark"></i></button>
-        `;
+        const iconSpan = document.createElement("span");
+        iconSpan.className = "notification-icon";
+        const iconEl = document.createElement("i");
+        iconEl.className = `fa-solid ${iconName}`;
+        iconSpan.appendChild(iconEl);
+
+        const msgSpan = document.createElement("span");
+        msgSpan.textContent = message;
+
+        const closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "notification-close";
+        closeBtn.setAttribute("aria-label", "Закрыть");
+        const closeIcon = document.createElement("i");
+        closeIcon.className = "fa-solid fa-xmark";
+        closeBtn.appendChild(closeIcon);
+
+        notification.appendChild(iconSpan);
+        notification.appendChild(msgSpan);
+        notification.appendChild(closeBtn);
         notification
             .querySelector(".notification-close")
             ?.addEventListener("click", () => notification.remove());
         stack.appendChild(notification);
         window.setTimeout(() => notification.remove(), 4200);
+    }
+
+    function confirmAction(options = {}) {
+        const modal = document.getElementById("confirm-modal");
+        if (!modal) {
+            return Promise.resolve(window.confirm(options.message || "Подтвердите действие"));
+        }
+
+        const title = modal.querySelector("#confirm-modal-title");
+        const message = modal.querySelector("#confirm-modal-message");
+        const acceptButton = modal.querySelector("[data-confirm-accept]");
+        const cancelButton = modal.querySelector("[data-confirm-cancel]");
+        const backdrop = modal.querySelector("[data-confirm-close='backdrop']");
+        const previousActive = document.activeElement;
+
+        title.textContent = options.title || "Подтвердите действие";
+        message.textContent = options.message || "Это действие нельзя отменить.";
+        acceptButton.textContent = options.confirmText || "Подтвердить";
+        cancelButton.textContent = options.cancelText || "Отмена";
+
+        acceptButton.classList.toggle("btn-danger", options.variant !== "primary");
+        acceptButton.classList.toggle("btn-primary", options.variant === "primary");
+
+        modal.hidden = false;
+
+        return new Promise((resolve) => {
+            let settled = false;
+
+            function cleanup(result) {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                modal.hidden = true;
+                acceptButton.removeEventListener("click", onAccept);
+                cancelButton.removeEventListener("click", onCancel);
+                backdrop?.removeEventListener("click", onCancel);
+                document.removeEventListener("keydown", onKeyDown);
+                previousActive?.focus?.({ preventScroll: true });
+                resolve(result);
+            }
+
+            function onAccept() {
+                cleanup(true);
+            }
+
+            function onCancel() {
+                cleanup(false);
+            }
+
+            function onKeyDown(event) {
+                if (event.key === "Escape") {
+                    event.preventDefault();
+                    cleanup(false);
+                }
+            }
+
+            acceptButton.addEventListener("click", onAccept);
+            cancelButton.addEventListener("click", onCancel);
+            backdrop?.addEventListener("click", onCancel);
+            document.addEventListener("keydown", onKeyDown);
+            window.setTimeout(() => acceptButton.focus(), 0);
+        });
     }
 
     async function navigate(url, options = {}) {
@@ -130,6 +208,75 @@
 
     function registerInit(initFn) {
         inits.push(initFn);
+    }
+
+    function initStatsTabs(root) {
+        const page = root.querySelector(".stats-page");
+        if (!page) {
+            return;
+        }
+
+        const buttons = Array.from(page.querySelectorAll("[data-stats-target]"));
+        const panels = Array.from(page.querySelectorAll("[data-stats-panel]"));
+        const rangeLinks = Array.from(page.querySelectorAll(".stats-range-link"));
+        if (!buttons.length || !panels.length) {
+            return;
+        }
+
+        const allowed = new Set(
+            panels
+                .map((panel) => panel.dataset.statsPanel)
+                .filter(Boolean)
+        );
+
+        function syncRangeLinks(target) {
+            if (!rangeLinks.length) {
+                return;
+            }
+
+            const nextTarget = allowed.has(target) ? target : "overview";
+
+            rangeLinks.forEach((link) => {
+                const url = new URL(link.href, window.location.origin);
+                url.hash = `stats-${nextTarget}`;
+                link.href = `${url.pathname}${url.search}${url.hash}`;
+            });
+        }
+
+        function setActive(target, updateHash = false) {
+            const nextTarget = allowed.has(target) ? target : "overview";
+
+            buttons.forEach((button) => {
+                const isActive = button.dataset.statsTarget === nextTarget;
+                button.classList.toggle("active", isActive);
+                button.setAttribute("aria-selected", isActive ? "true" : "false");
+            });
+
+            panels.forEach((panel) => {
+                panel.hidden = panel.dataset.statsPanel !== nextTarget;
+            });
+
+            page.dataset.statsTabsReady = "true";
+            syncRangeLinks(nextTarget);
+
+            if (updateHash) {
+                const url = new URL(window.location.href);
+                url.hash = `stats-${nextTarget}`;
+                window.history.replaceState({}, "", url.toString());
+            }
+        }
+
+        const hashTarget = window.location.hash.startsWith("#stats-")
+            ? window.location.hash.slice(7)
+            : "overview";
+
+        setActive(hashTarget, false);
+
+        buttons.forEach((button) => {
+            button.addEventListener("click", () => {
+                setActive(button.dataset.statsTarget, true);
+            });
+        });
     }
 
     function runPageInits(root) {
@@ -198,12 +345,16 @@
 
     window.HabitFlowUI = {
         applyTheme,
+        confirmAction,
         getCsrfToken,
+        initStatsTabs,
         navigate,
         registerInit,
         runPageInits,
         showNotification,
     };
+
+    registerInit(initStatsTabs);
 
     document.addEventListener("DOMContentLoaded", () => {
         applyTheme(getTheme());

@@ -9,16 +9,23 @@
 {% block create_button_text %}Добавить тему{% endblock %}
 
 {% block list_content %}
+{% set visible_themes = namespace(items=[]) %}
+{% for theme in themes_list %}
+    {% if theme.name != 'Все темы' %}
+        {% set visible_themes.items = visible_themes.items + [theme] %}
+    {% endif %}
+{% endfor %}
+
+{% if visible_themes.items %}
 <div class="themes-grid">
-    {% for theme in themes_list %}
-        {% if theme.name != 'Все темы' %}
+    {% for theme in visible_themes.items %}
         <article class="surface-card theme-card" data-theme-id="{{ theme.id }}" data-theme-name="{{ theme.name }}" style="--theme-color: {{ theme.color }};">
             <div class="theme-card-topbar"></div>
             <div class="theme-card-body">
                 <div class="theme-header">
                     <span class="theme-avatar">{{ theme.name[:1]|upper }}</span>
-                    <div>
-                        <h3 class="theme-title">{{ theme.name }}</h3>
+                    <div class="theme-header-copy">
+                        <h3 class="theme-title" title="{{ theme.name }}">{{ theme.name }}</h3>
                     </div>
                 </div>
                 <div class="theme-counts">
@@ -37,7 +44,6 @@
                 </div>
             </div>
         </article>
-        {% endif %}
     {% endfor %}
 
     <a href="/themes/new" class="theme-card-new" data-enhanced-nav="true">
@@ -47,12 +53,15 @@
         </div>
     </a>
 </div>
-
-{% if not themes_list %}
-<div class="empty-state centered">
+{% else %}
+<div class="empty-state centered themes-empty-state">
     <span class="empty-state-icon"><i class="fa-solid fa-palette"></i></span>
     <h3>Темы не найдены</h3>
     <p>Создайте первую тему, чтобы задачам и привычкам было проще жить в одном ритме.</p>
+    <a href="/themes/new" class="btn btn-primary" data-enhanced-nav="true">
+        <i class="fa-solid fa-plus"></i>
+        Добавить тему
+    </a>
 </div>
 {% endif %}
 

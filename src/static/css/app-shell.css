@@ -1,7 +1,7 @@
 .app-shell-main {
   max-width: var(--container);
   margin: 0 auto;
-  padding: 24px;
+  padding: 16px 24px 20px;
 }
 
 .app-shell-layout {
@@ -17,13 +17,15 @@
 
 .page-sidebar {
   position: sticky;
-  top: calc(var(--nav-h) + 24px);
+  top: calc(var(--nav-h) + 16px);
   display: grid;
   gap: 16px;
+  min-width: 0;
 }
 
 .sidebar-card {
   padding: 16px;
+  min-width: 0;
 }
 
 .sidebar-header {
@@ -55,6 +57,7 @@
 .theme-filter-list {
   display: grid;
   gap: 6px;
+  min-width: 0;
 }
 
 .theme-filter-link,
@@ -69,6 +72,8 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   background: transparent;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .theme-filter-link:hover,
@@ -90,6 +95,13 @@
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+.theme-filter-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar-stats {
@@ -294,7 +306,7 @@
 
 @media (max-width: 760px) {
   .app-shell-main {
-    padding: 16px;
+    padding: 14px 16px 16px;
   }
 
   .page-header-card {

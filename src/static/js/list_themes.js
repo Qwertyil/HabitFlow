@@ -6,14 +6,21 @@ function initThemeDelete(root = document) {
         button.dataset.boundDelete = "1";
         button.addEventListener("click", async () => {
             const themeId = button.dataset.themeId;
-            if (
-                !themeId ||
-                !window.confirm(
-                    'Удалить эту тему? Все связанные задачи и привычки останутся, но станут "Без темы".'
-                )
-            ) {
+            if (!themeId) {
                 return;
             }
+
+            const confirmed = await window.HabitFlowUI.confirmAction({
+                title: "Удалить тему?",
+                message:
+                    'Все связанные задачи и привычки останутся, но станут "Без темы".',
+                confirmText: "Удалить тему",
+            });
+
+            if (!confirmed) {
+                return;
+            }
+
             button.disabled = true;
 
             try {

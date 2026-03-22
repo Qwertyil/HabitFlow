@@ -7,7 +7,7 @@
             <span class="form-icon">
                 {% block form_icon %}<i class="fa-solid fa-plus"></i>{% endblock %}
             </span>
-            <div>
+            <div class="form-header-copy">
                 <h1 class="form-title-text">{% block form_heading %}Форма{% endblock %}</h1>
                 <p class="form-description">{% block form_description %}Описание формы{% endblock %}</p>
             </div>
@@ -33,6 +33,8 @@
 
             {% block specific_fields %}{% endblock %}
             {% block additional_fields %}{% endblock %}
+
+            <div class="form-feedback" data-form-feedback aria-live="polite"></div>
 
             <div class="form-actions">
                 <a href="{% block cancel_url %}/{% endblock %}" class="btn btn-outline" data-enhanced-nav="true">
