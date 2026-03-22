@@ -150,6 +150,10 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.selection-grid.form-theme-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
 .selection-grid.priority {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -202,6 +206,17 @@
 .selection-title {
   font-size: 12px;
   font-weight: 700;
+}
+
+.selection-grid.form-theme-grid .selection-card {
+  min-height: 112px;
+  padding-inline: 18px;
+}
+
+.selection-grid.form-theme-grid .selection-title {
+  max-width: 100%;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .selection-meta {
