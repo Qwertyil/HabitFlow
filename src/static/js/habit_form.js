@@ -89,7 +89,7 @@ function initHabitForm(root = document) {
     scheduleTypeSelect.addEventListener("change", toggleBlocks);
     periodInfiniteCheckbox?.addEventListener("change", togglePeriod);
 
-    form.addEventListener("submit", (event) => {
+    window.HabitFlowForms?.registerValidator(form, () => {
         try {
             const config = buildScheduleConfig();
             scheduleConfigInput.value = JSON.stringify(config);
@@ -98,9 +98,22 @@ function initHabitForm(root = document) {
             if (startsOn && endsOn && endsOn < startsOn) {
                 throw new Error("Дата конца периода не может быть раньше даты начала.");
             }
+
+            return { isValid: true };
         } catch (error) {
-            event.preventDefault();
-            showFormError(error instanceof Error ? error.message : "Проверьте параметры привычки.");
+            const target =
+                scheduleTypeSelect.value === "weekly_days"
+                    ? blocks.weekly_days
+                    : root.querySelector("#ends_on") || scheduleTypeSelect;
+
+            return {
+                isValid: false,
+                message:
+                    error instanceof Error
+                        ? error.message
+                        : "Проверьте параметры привычки.",
+                target,
+            };
         }
     });
 }

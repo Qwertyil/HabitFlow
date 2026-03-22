@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
+{% set asset_v = "v2-20260322c" %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,19 +15,19 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="{{ url_for('static', path='/css/design-system.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', path='/css/navbar.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', path='/css/app-shell.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', path='/css/home.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', path='/css/tasks.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', path='/css/habits.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', path='/css/themes.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', path='/css/forms.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', path='/css/auth.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', path='/css/stats.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', path='/css/message.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/design-system.css') }}?v={{ asset_v }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/navbar.css') }}?v={{ asset_v }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/app-shell.css') }}?v={{ asset_v }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/home.css') }}?v={{ asset_v }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/tasks.css') }}?v={{ asset_v }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/habits.css') }}?v={{ asset_v }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/themes.css') }}?v={{ asset_v }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/forms.css') }}?v={{ asset_v }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/auth.css') }}?v={{ asset_v }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/stats.css') }}?v={{ asset_v }}" rel="stylesheet">
+    <link href="{{ url_for('static', path='/css/message.css') }}?v={{ asset_v }}" rel="stylesheet">
 </head>
 <body data-page="{{ current_page|default('app', true) }}">
     {% set next_target = request.url.path %}
@@ -87,33 +88,18 @@
 
                 {% if current_user %}
                 <details class="nav-user-menu">
-                    <summary class="nav-user-trigger" title="{{ current_user.email }}">
+                    <summary class="nav-user-trigger" title="{{ current_user_display_name or current_user.email }}">
                         <span class="nav-avatar">{{ user_initial }}</span>
                         <span class="nav-user-copy">
-                            <span class="nav-user-label">Пользователь</span>
-                            <span class="nav-user-name">{{ current_user_display_name or current_user.email }}</span>
+                            <span class="nav-user-name" title="{{ current_user_display_name or current_user.email }}">{{ current_user_display_name or current_user.email }}</span>
                         </span>
                         <i class="fa-solid fa-chevron-down nav-user-chevron"></i>
                     </summary>
                     <div class="nav-user-dropdown">
-                        <a href="/themes" class="nav-dropdown-link" data-enhanced-nav="true">
-                            <i class="fa-solid fa-palette"></i>
-                            <span>Мои темы</span>
-                        </a>
-                        <a href="/stats" class="nav-dropdown-link" data-enhanced-nav="true">
-                            <i class="fa-solid fa-chart-column"></i>
-                            <span>Сводка</span>
-                        </a>
-                        <button type="button" class="nav-dropdown-action" data-theme-toggle="true">
-                            <i class="fa-solid fa-circle-half-stroke"></i>
-                            <span>Переключить тему</span>
-                            <span class="nav-theme-status" data-theme-label="true">Светлая</span>
-                        </button>
-                        <div class="nav-dropdown-divider"></div>
                         <form method="post" action="/auth/logout" class="nav-logout-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                             <input type="hidden" name="next" value="/">
-                            <button type="submit" class="nav-dropdown-action">
+                            <button type="submit" class="nav-dropdown-action nav-dropdown-action-danger">
                                 <i class="fa-solid fa-right-from-bracket"></i>
                                 <span>Выход</span>
                             </button>
@@ -146,10 +132,11 @@
                             href="?theme={{ topic.name|urlencode }}"
                             class="theme-filter-link {% if topic.is_active %}active{% endif %}"
                             data-theme-id="{{ topic.id }}"
+                            title="{{ topic.name }}"
                             data-enhanced-nav="true"
                         >
                             <span class="theme-dot" style="background: {{ topic.color }};"></span>
-                            <span>{{ topic.name }}</span>
+                            <span class="theme-filter-name">{{ topic.name }}</span>
                         </a>
                         {% endfor %}
                     </div>
@@ -214,16 +201,38 @@
         </div>
     </main>
 
-    <script src="{{ url_for('static', path='/js/shared.js') }}"></script>
-    <script src="{{ url_for('static', path='/js/ui.js') }}"></script>
-    <script src="{{ url_for('static', path='/js/forms.js') }}"></script>
-    <script src="{{ url_for('static', path='/js/habit_form.js') }}"></script>
-    <script src="{{ url_for('static', path='/js/update.js') }}"></script>
-    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
-    <script src="{{ url_for('static', path='/js/list_tasks.js') }}"></script>
-    <script src="{{ url_for('static', path='/js/list_habits.js') }}"></script>
-    <script src="{{ url_for('static', path='/js/list_themes.js') }}"></script>
-    <script src="{{ url_for('static', path='/js/auth_validation.js') }}"></script>
+    <div class="confirm-modal" id="confirm-modal" hidden>
+        <div class="confirm-modal-backdrop" data-confirm-close="backdrop"></div>
+        <div
+            class="surface-card confirm-modal-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-modal-title"
+            aria-describedby="confirm-modal-message"
+        >
+            <div class="confirm-modal-icon">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div class="confirm-modal-copy">
+                <h2 id="confirm-modal-title">Подтвердите действие</h2>
+                <p id="confirm-modal-message">Это действие нельзя отменить.</p>
+            </div>
+            <div class="confirm-modal-actions">
+                <button type="button" class="btn btn-outline" data-confirm-cancel>Отмена</button>
+                <button type="button" class="btn btn-danger" data-confirm-accept>Удалить</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', path='/js/shared.js') }}?v={{ asset_v }}"></script>
+    <script src="{{ url_for('static', path='/js/ui.js') }}?v={{ asset_v }}"></script>
+    <script src="{{ url_for('static', path='/js/forms.js') }}?v={{ asset_v }}"></script>
+    <script src="{{ url_for('static', path='/js/habit_form.js') }}?v={{ asset_v }}"></script>
+    <script src="{{ url_for('static', path='/js/main.js') }}?v={{ asset_v }}"></script>
+    <script src="{{ url_for('static', path='/js/list_tasks.js') }}?v={{ asset_v }}"></script>
+    <script src="{{ url_for('static', path='/js/list_habits.js') }}?v={{ asset_v }}"></script>
+    <script src="{{ url_for('static', path='/js/list_themes.js') }}?v={{ asset_v }}"></script>
+    <script src="{{ url_for('static', path='/js/auth_validation.js') }}?v={{ asset_v }}"></script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

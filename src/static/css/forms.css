@@ -2,15 +2,16 @@
   max-width: 760px;
   margin: 0 auto;
   display: grid;
-  gap: 18px;
+  gap: 16px;
 }
 
 .form-header-card {
   display: grid;
-  gap: 12px;
-  justify-items: center;
-  text-align: center;
-  padding: 30px 28px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  text-align: left;
 }
 
 .form-icon {
@@ -24,6 +25,11 @@
   font-size: 22px;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   box-shadow: 0 18px 26px rgba(108, 99, 255, 0.24);
+}
+
+.form-header-copy {
+  display: grid;
+  gap: 4px;
 }
 
 .form-title-text {
@@ -43,13 +49,18 @@
 
 .item-form {
   display: grid;
-  gap: 16px;
+  gap: 14px;
 }
 
 .form-section {
   display: grid;
-  gap: 18px;
-  padding: 22px 24px;
+  gap: 16px;
+  padding: 20px 22px;
+}
+
+.form-feedback {
+  display: grid;
+  gap: 10px;
 }
 
 .section-header {
@@ -104,6 +115,10 @@
   font-weight: 600;
 }
 
+.field-error {
+  margin-top: 2px;
+}
+
 .form-error {
   padding: 12px 14px;
   border-radius: 14px;
@@ -116,6 +131,14 @@
 .select-control.error {
   border-color: rgba(255, 107, 107, 0.4);
   box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.1);
+}
+
+.schedule-config-block.error,
+.selection-grid.error {
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 107, 107, 0.24);
+  background: rgba(255, 107, 107, 0.06);
 }
 
 .selection-grid {
@@ -280,7 +303,18 @@
 }
 
 @media (max-width: 760px) {
-  .form-header-card,
+  .form-header-card {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 12px;
+    padding: 18px;
+    text-align: center;
+  }
+
+  .form-header-copy {
+    gap: 6px;
+  }
+
   .form-section {
     padding: 18px;
   }

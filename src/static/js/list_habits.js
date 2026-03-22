@@ -42,7 +42,17 @@ function initHabitFiltersAndDelete(root = document) {
         button.dataset.boundDelete = "1";
         button.addEventListener("click", async () => {
             const habitId = button.dataset.habitId;
-            if (!habitId || !window.confirm("Удалить эту привычку?")) {
+            if (!habitId) {
+                return;
+            }
+
+            const confirmed = await window.HabitFlowUI.confirmAction({
+                title: "Удалить привычку?",
+                message: "Привычка будет удалена без возможности восстановления.",
+                confirmText: "Удалить привычку",
+            });
+
+            if (!confirmed) {
                 return;
             }
             button.disabled = true;

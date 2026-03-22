@@ -33,10 +33,11 @@
                 href="?{{ theme_query.parts|join('&') }}"
                 class="theme-filter-pill {% if topic.is_active %}active{% endif %} theme-filter-link"
                 data-theme-id="{{ topic.id }}"
+                title="{{ topic.name }}"
                 data-enhanced-nav="true"
             >
                 <span class="theme-dot" style="background: {{ topic.color }};"></span>
-                <span>{{ topic.name }}</span>
+                <span class="theme-filter-name">{{ topic.name }}</span>
             </a>
             {% endfor %}
         </div>

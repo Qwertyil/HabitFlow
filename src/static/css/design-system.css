@@ -97,13 +97,17 @@ img {
   max-width: 100%;
 }
 
+.hero-title,
+.display-serif {
+  font-family: "Cormorant Garamond", serif;
+}
+
 .page-title,
 .brand-text,
-.hero-title,
 .auth-title,
 .form-title-text,
 .message-title {
-  font-family: "Unbounded", sans-serif;
+  font-family: "Onest", sans-serif;
 }
 
 .visually-hidden,
@@ -243,12 +247,100 @@ img {
   box-shadow: var(--shadow-sm);
 }
 
+.confirm-modal[hidden] {
+  display: none !important;
+}
+
+.confirm-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.confirm-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 19, 36, 0.56);
+  backdrop-filter: blur(8px);
+}
+
+.confirm-modal-dialog {
+  position: relative;
+  width: min(100%, 440px);
+  display: grid;
+  gap: 16px;
+  padding: 22px 22px 20px;
+  border-radius: 22px;
+  box-shadow: 0 28px 60px rgba(15, 19, 36, 0.28);
+}
+
+.confirm-modal-icon {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  color: var(--danger);
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.confirm-modal-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.confirm-modal-copy h2,
+.confirm-modal-copy p {
+  margin: 0;
+}
+
+.confirm-modal-copy h2 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.confirm-modal-copy p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.confirm-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .confirm-modal {
+    padding: 16px;
+  }
+
+  .confirm-modal-dialog {
+    width: 100%;
+    padding: 18px;
+  }
+
+  .confirm-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .confirm-modal-actions .btn {
+    width: 100%;
+  }
+}
+
 .page-title {
   margin: 0;
-  font-size: 24px;
-  font-weight: 800;
+  font-size: 26px;
+  font-weight: 700;
   line-height: 1.2;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 .page-lead {

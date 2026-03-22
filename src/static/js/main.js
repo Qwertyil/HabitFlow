@@ -92,7 +92,17 @@ function initMainPageInteractions(root = document) {
         button.dataset.boundDeleteTask = "1";
         button.addEventListener("click", async () => {
             const taskId = button.dataset.taskId;
-            if (!taskId || !window.confirm("Удалить эту задачу?")) {
+            if (!taskId) {
+                return;
+            }
+
+            const confirmed = await window.HabitFlowUI.confirmAction({
+                title: "Удалить задачу?",
+                message: "Задача будет удалена без возможности восстановления.",
+                confirmText: "Удалить задачу",
+            });
+
+            if (!confirmed) {
                 return;
             }
             button.disabled = true;

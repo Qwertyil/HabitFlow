@@ -95,8 +95,9 @@ body[data-page="register"] {
 
 .auth-card-header h1 {
   margin: 0;
-  font-family: "Unbounded", sans-serif;
+  font-family: "Onest", sans-serif;
   font-size: 26px;
+  font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.03em;
 }

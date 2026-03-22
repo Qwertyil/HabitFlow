@@ -164,7 +164,9 @@ async def test_get_stats_returns_html_and_sets_current_page(
     response = await client.get("/stats")
 
     assert_html_response(response, status_code=200)
-    assert "Statistics v2" in response.text
+    assert '<div class="surface-card stats-toolbar">' in response.text
+    assert 'data-stats-target="overview"' in response.text
+    assert 'data-stats-target="insights"' in response.text
     assert "Пульс задач" in response.text
     assert "Фокус периода" in response.text
     assert "Создано за 7 дней" in response.text
@@ -204,7 +206,7 @@ async def test_get_stats_supports_30d_range(
     assert "Создано за 7 дней" not in response.text
     assert "Завершено за 30 дней" in response.text
     assert "Завершено за 7 дней" not in response.text
-    assert "Активный период: <strong>30 дней</strong>" in response.text
+    assert '/stats?range=30d" class="stats-range-link active' in response.text
     context = captured["context"]
     assert isinstance(context, dict)
     assert isinstance(context["page_data"], StatisticsPageData)
