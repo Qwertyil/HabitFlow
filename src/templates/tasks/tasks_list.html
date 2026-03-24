@@ -4,7 +4,7 @@
 {% set current_sort = request.query_params.get('sort', 'created_at') %}
 {% set current_order = request.query_params.get('order', 'desc') %}
 
-{% block page_icon %}<i class="fa-regular fa-circle-check"></i>{% endblock %}
+{% block page_hero_class %}page-hero--tasks{% endblock %}
 {% block page_title %}Задачи{% endblock %}
 {% block page_lead %}Фильтруйте, сортируйте и закрывайте задачи без полной перезагрузки страницы.{% endblock %}
 {% block create_url %}/tasks/new{% endblock %}

@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-StatsRange = Literal["7d", "30d"]
+StatsRange = Literal["7d", "30d", "90d", "all"]
 
 
 class StatsKpi(BaseModel):
@@ -26,8 +26,10 @@ class TaskStatisticsPage(BaseModel):
     by_theme: dict[str, int] = Field(default_factory=dict)
     created_in_7d: int = 0
     created_in_30d: int = 0
+    created_in_90d: int = 0
     completed_in_7d: int = 0
     completed_in_30d: int = 0
+    completed_in_90d: int = 0
     avg_completion_time_hours: float | None = None
 
 
@@ -40,6 +42,8 @@ class HabitStatisticsPage(BaseModel):
     success_rate_today: int = 0
     success_rate_7d: int = 0
     success_rate_30d: int = 0
+    success_rate_90d: int = 0
+    success_rate_all: int = 0
     schedule_type_distribution: dict[str, int] = Field(default_factory=dict)
     completions_by_day: list[StatsBreakdownItem] = Field(default_factory=list)
     top_streaks: list[StatsBreakdownItem] = Field(default_factory=list)

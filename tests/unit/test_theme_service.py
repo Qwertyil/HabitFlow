@@ -116,6 +116,15 @@ async def test_create_theme_rejects_all_themes_title():
 
 
 @pytest.mark.asyncio
+async def test_create_theme_rejects_markup_like_name() -> None:
+    repo = DummyThemeRepo()
+    service = ThemeService(theme_repo=repo)
+
+    with pytest.raises(ValueError, match="символы < или >"):
+        await service.create_theme(ThemeCreate(name="<bad>"))
+
+
+@pytest.mark.asyncio
 async def test_create_theme_validates_color_uniqueness_when_provided():
     existing = ThemeInDB(
         id=uuid4(),
@@ -220,6 +229,22 @@ async def test_update_theme_rejects_all_themes_name():
 
     with pytest.raises(ValueError, match="Invalid theme title"):
         await service.update_theme(old, ThemeUpdate(name="Все темы"))
+
+
+@pytest.mark.asyncio
+async def test_update_theme_rejects_control_characters_in_name() -> None:
+    old = ThemeInDB(
+        id=uuid4(),
+        name="Hobby",
+        color="#FF00FF",
+        created_at=_dt(2026, 1, 1),
+        updated_at=_dt(2026, 1, 1),
+    )
+    repo = DummyThemeRepo()
+    service = ThemeService(theme_repo=repo)
+
+    with pytest.raises(ValueError, match="управляющие символы"):
+        await service.update_theme(old, ThemeUpdate(name="Bad\u0007Theme"))
 
 
 @pytest.mark.asyncio

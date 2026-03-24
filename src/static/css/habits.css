@@ -5,11 +5,17 @@
 
 .habit-card {
   overflow: hidden;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--habit-theme-color, var(--theme-none)) 6%, transparent) 0%, transparent 40%),
+    var(--surface);
 }
 
 .habit-card:hover {
   border-color: var(--border-strong);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-elevated);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--habit-theme-color, var(--theme-none)) 10%, transparent) 0%, transparent 50%),
+    var(--surface);
 }
 
 .habit-card-inner {
@@ -18,9 +24,10 @@
 }
 
 .habit-card-accent {
-  width: 4px;
+  width: 5px;
   flex-shrink: 0;
   background: var(--habit-theme-color, var(--theme-none));
+  box-shadow: 4px 0 16px color-mix(in srgb, var(--habit-theme-color, var(--theme-none)) 20%, transparent);
 }
 
 .habit-card-body {

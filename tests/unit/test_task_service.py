@@ -184,6 +184,16 @@ async def test_create_task_validates_theme_exists_when_theme_id_set():
 
 
 @pytest.mark.asyncio
+async def test_create_task_rejects_markup_like_name() -> None:
+    task_repo = DummyTaskRepo()
+    theme_repo = DummyThemeRepo()
+    service = TaskService(task_repo=task_repo, theme_repo=theme_repo)
+
+    with pytest.raises(ValueError, match="символы < или >"):
+        await service.create_task(TaskCreateAPI(name="<b>task</b>", priority="low"))
+
+
+@pytest.mark.asyncio
 async def test_update_task_raises_when_task_missing():
     task_repo = DummyTaskRepo()
     theme_repo = DummyThemeRepo()
@@ -230,6 +240,22 @@ async def test_update_task_validates_theme_and_maps_priority():
     assert res is not None
     assert res.priority_id == PRIORITY_IDS["high"]
     assert res.theme_id == theme_id
+
+
+@pytest.mark.asyncio
+async def test_update_task_rejects_control_characters_in_name() -> None:
+    task_id = uuid4()
+    existing_task = _mk_task(
+        priority_id=PRIORITY_IDS["low"], completed_at=None, theme_id=None
+    ).model_copy(update={"id": task_id})
+
+    task_repo = DummyTaskRepo()
+    task_repo.get_by_id_result = existing_task
+    theme_repo = DummyThemeRepo()
+    service = TaskService(task_repo=task_repo, theme_repo=theme_repo)
+
+    with pytest.raises(ValueError, match="управляющие символы"):
+        await service.update_task(task_id, TaskUpdateAPI(name="bad\u0007task"))
 
 
 @pytest.mark.asyncio
@@ -476,8 +502,10 @@ async def test_get_task_page_statistics_slices_created_and_completed_counters_by
 
     assert stats.created_in_7d == 2
     assert stats.created_in_30d == 3
+    assert stats.created_in_90d == 4
     assert stats.completed_in_7d == 1
     assert stats.completed_in_30d == 2
+    assert stats.completed_in_90d == 3
 
 
 @pytest.mark.asyncio
@@ -515,5 +543,7 @@ async def test_get_task_page_statistics_excludes_future_completions_from_all_com
     assert stats.avg_completion_time_hours == 12.0
     assert stats.created_in_7d == 2
     assert stats.created_in_30d == 2
+    assert stats.created_in_90d == 2
     assert stats.completed_in_7d == 1
     assert stats.completed_in_30d == 1
+    assert stats.completed_in_90d == 1

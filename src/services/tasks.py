@@ -1,5 +1,5 @@
 from datetime import UTC, datetime, timedelta
-from typing import Literal, overload
+from typing import Any, Literal, overload
 from uuid import UUID
 
 from src.exceptions import TaskNotFound
@@ -14,6 +14,7 @@ from src.schemas import (
     TaskUpdate,
     TaskUpdateAPI,
 )
+from src.validation import validate_user_facing_name
 
 PRIORITY_IDS = {
     "low": UUID("00000000-0000-0000-0000-000000000001"),
@@ -44,13 +45,17 @@ class TaskService:
 
     async def create_task(self, task_data: TaskCreateAPI) -> TaskInDB:
         """Создать новую задачу"""
+        validated_name = validate_user_facing_name(
+            task_data.name,
+            field_label="Название задачи",
+        )
         if task_data.theme_id:
             theme = await self.theme_repo.get_by_id(task_data.theme_id)
             if not theme:
                 raise ValueError("Theme not found")
 
         new_task_data = TaskCreate(
-            name=task_data.name,
+            name=validated_name,
             description=task_data.description,
             theme_id=task_data.theme_id,
             priority_id=self.map_priority(task_data.priority),
@@ -86,10 +91,13 @@ class TaskService:
         if not raw_data:
             return old_task  # ничего не меняем
 
-        update_dict = {}
+        update_dict: dict[str, Any] = {}
 
         if "name" in raw_data:
-            update_dict["name"] = raw_data["name"]
+            update_dict["name"] = validate_user_facing_name(
+                raw_data["name"],
+                field_label="Название задачи",
+            )
         if "description" in raw_data:
             update_dict["description"] = raw_data["description"]
 
@@ -201,14 +209,17 @@ class TaskService:
         reference_time = self._to_utc(now or datetime.now(UTC))
         seven_day_cutoff = reference_time - timedelta(days=7)
         thirty_day_cutoff = reference_time - timedelta(days=30)
+        ninety_day_cutoff = reference_time - timedelta(days=90)
 
         total = len(all_tasks)
         completed = 0
         active = 0
         created_in_7d = 0
         created_in_30d = 0
+        created_in_90d = 0
         completed_in_7d = 0
         completed_in_30d = 0
+        completed_in_90d = 0
         by_priority = dict.fromkeys(PRIORITIES, 0)
         by_theme: dict[str, int] = {}
         completion_durations_hours: list[float] = []
@@ -222,12 +233,14 @@ class TaskService:
                 reference_time,
                 seven_day_cutoff,
                 thirty_day_cutoff,
+                ninety_day_cutoff,
             )
             completed_hits = self._get_period_hits(
                 completed_at,
                 reference_time,
                 seven_day_cutoff,
                 thirty_day_cutoff,
+                ninety_day_cutoff,
             )
 
             if is_completed and completed_at:
@@ -242,8 +255,10 @@ class TaskService:
 
             created_in_7d += created_hits[0]
             created_in_30d += created_hits[1]
+            created_in_90d += created_hits[2]
             completed_in_7d += completed_hits[0]
             completed_in_30d += completed_hits[1]
+            completed_in_90d += completed_hits[2]
 
             priority_key = ID_TO_PRIORITY.get(task.priority_id)
             if priority_key in by_priority:
@@ -273,8 +288,10 @@ class TaskService:
             by_theme=sorted_by_theme,
             created_in_7d=created_in_7d,
             created_in_30d=created_in_30d,
+            created_in_90d=created_in_90d,
             completed_in_7d=completed_in_7d,
             completed_in_30d=completed_in_30d,
+            completed_in_90d=completed_in_90d,
             avg_completion_time_hours=avg_completion_time_hours,
         )
 
@@ -316,12 +333,14 @@ class TaskService:
         reference_time: datetime,
         seven_day_cutoff: datetime,
         thirty_day_cutoff: datetime,
-    ) -> tuple[int, int]:
+        ninety_day_cutoff: datetime,
+    ) -> tuple[int, int, int]:
         if value is None or value > reference_time:
-            return (0, 0)
+            return (0, 0, 0)
         return (
             int(value >= seven_day_cutoff),
             int(value >= thirty_day_cutoff),
+            int(value >= ninety_day_cutoff),
         )
 
     def _is_completed_by_reference(

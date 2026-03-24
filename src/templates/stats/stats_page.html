@@ -13,16 +13,28 @@
 {% block title %}Статистика - HabitFlow{% endblock %}
 
 {% block content %}
-{% set current_period_label = "30 дней" if page_data.range == "30d" else "7 дней" %}
-{% set current_created_value = page_data.tasks.created_in_30d if page_data.range == "30d" else page_data.tasks.created_in_7d %}
-{% set current_completed_value = page_data.tasks.completed_in_30d if page_data.range == "30d" else page_data.tasks.completed_in_7d %}
-{% set current_habit_success = page_data.habits.success_rate_30d if page_data.range == "30d" else page_data.habits.success_rate_7d %}
+{% set range_labels = {"7d": "Неделя", "30d": "Месяц", "90d": "Квартал", "all": "Всё время"} %}
+{% set current_period_label = range_labels.get(page_data.range, "Неделя") %}
+{% set task_created_labels = {"7d": "Создано за неделю", "30d": "Создано за месяц", "90d": "Создано за квартал", "all": "Создано за всё время"} %}
+{% set task_completed_labels = {"7d": "Завершено за неделю", "30d": "Завершено за месяц", "90d": "Завершено за квартал", "all": "Завершено за всё время"} %}
+{% set habit_success_labels = {"7d": "Успех за неделю", "30d": "Успех за месяц", "90d": "Успех за квартал", "all": "Успех за всё время"} %}
+{% set trend_titles = {"7d": "Дневная динамика", "30d": "Дневная динамика", "90d": "Недельная динамика", "all": "Месячная динамика"} %}
+{% set current_created_value = {"7d": page_data.tasks.created_in_7d, "30d": page_data.tasks.created_in_30d, "90d": page_data.tasks.created_in_90d, "all": page_data.tasks.total}.get(page_data.range, page_data.tasks.created_in_7d) %}
+{% set current_completed_value = {"7d": page_data.tasks.completed_in_7d, "30d": page_data.tasks.completed_in_30d, "90d": page_data.tasks.completed_in_90d, "all": page_data.tasks.completed}.get(page_data.range, page_data.tasks.completed_in_7d) %}
+{% set current_habit_success = {"7d": page_data.habits.success_rate_7d, "30d": page_data.habits.success_rate_30d, "90d": page_data.habits.success_rate_90d, "all": page_data.habits.success_rate_all}.get(page_data.range, page_data.habits.success_rate_7d) %}
 {% set remaining_habits = page_data.habits.due_today - page_data.habits.completed_today %}
 {% if remaining_habits < 0 %}
     {% set remaining_habits = 0 %}
 {% endif %}
 
 <div class="stats-page">
+    <header class="stats-hero">
+        <div class="stats-hero-copy">
+            <h1 class="stats-hero-title">Статистика</h1>
+            <p class="stats-hero-lead">Полная картина вашего прогресса: задачи, привычки, темы и инсайты.</p>
+        </div>
+    </header>
+
     <div class="surface-card stats-toolbar">
         <nav class="stats-section-nav" aria-label="Разделы статистики" role="tablist">
             <button type="button" class="stats-section-nav-link" data-stats-target="overview" role="tab" aria-selected="true">
@@ -46,10 +58,21 @@
                 <span>Инсайты</span>
             </button>
         </nav>
-        <div class="stats-range-filter" aria-label="Выбор периода статистики">
-            <a href="/stats?range=7d" class="stats-range-link {% if page_data.range == '7d' %}active{% endif %}" data-enhanced-nav="true">7 дней</a>
-            <a href="/stats?range=30d" class="stats-range-link {% if page_data.range == '30d' %}active{% endif %}" data-enhanced-nav="true">30 дней</a>
-        </div>
+        <details class="stats-range-filter" data-close-on-outside-click="true">
+            <summary class="stats-range-trigger" aria-label="Выбор периода статистики">
+                <span class="stats-range-trigger-copy">
+                    <span class="stats-range-trigger-label">Период</span>
+                    <strong>{{ current_period_label }}</strong>
+                </span>
+                <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+            </summary>
+            <div class="stats-range-menu">
+                <a href="/stats?range=7d" class="stats-range-link {% if page_data.range == '7d' %}active{% endif %}" data-enhanced-nav="true">Неделя</a>
+                <a href="/stats?range=30d" class="stats-range-link {% if page_data.range == '30d' %}active{% endif %}" data-enhanced-nav="true">Месяц</a>
+                <a href="/stats?range=90d" class="stats-range-link {% if page_data.range == '90d' %}active{% endif %}" data-enhanced-nav="true">Квартал</a>
+                <a href="/stats?range=all" class="stats-range-link {% if page_data.range == 'all' %}active{% endif %}" data-enhanced-nav="true">Всё время</a>
+            </div>
+        </details>
     </div>
 
     <div class="stats-layout">
@@ -98,7 +121,7 @@
                         <p>Закрытие задач, скорость выполнения и распределение нагрузки по приоритетам и темам.</p>
                     </div>
 
-                    <div class="stats-section-layout">
+                    <div class="stats-section-layout stats-section-layout-tasks">
                         <div class="stats-overview-panel stats-accent-panel stats-accent-panel-tasks">
                             <div class="stats-overview-copy">
                                 <span class="stats-overview-label">Пульс задач</span>
@@ -117,9 +140,9 @@
                             <div class="stats-summary-row"><span>Всего</span><strong>{{ page_data.tasks.total }}</strong></div>
                             <div class="stats-summary-row"><span>Активные</span><strong>{{ page_data.tasks.active }}</strong></div>
                             <div class="stats-summary-row"><span>Выполненные</span><strong>{{ page_data.tasks.completed }}</strong></div>
-                            <div class="stats-summary-row"><span>Completion rate</span><strong>{{ page_data.tasks.completion_rate }}%</strong></div>
-                            <div class="stats-summary-row"><span>{% if page_data.range == "30d" %}Создано за 30 дней{% else %}Создано за 7 дней{% endif %}</span><strong>{{ current_created_value }}</strong></div>
-                            <div class="stats-summary-row"><span>{% if page_data.range == "30d" %}Завершено за 30 дней{% else %}Завершено за 7 дней{% endif %}</span><strong>{{ current_completed_value }}</strong></div>
+                            <div class="stats-summary-row"><span>Процент выполнения</span><strong>{{ page_data.tasks.completion_rate }}%</strong></div>
+                            <div class="stats-summary-row"><span>{{ task_created_labels.get(page_data.range, "Создано за неделю") }}</span><strong>{{ current_created_value }}</strong></div>
+                            <div class="stats-summary-row"><span>{{ task_completed_labels.get(page_data.range, "Завершено за неделю") }}</span><strong>{{ current_completed_value }}</strong></div>
                             <div class="stats-summary-row"><span>Среднее время до выполнения</span><strong>{% if page_data.tasks.avg_completion_time_hours is not none %}{{ page_data.tasks.avg_completion_time_hours }} ч{% else %}-{% endif %}</strong></div>
                         </div>
                     </div>
@@ -180,7 +203,7 @@
                 <p>Дневная дисциплина, качество выполнения за период и привычки с лучшей серией.</p>
             </div>
 
-            <div class="stats-section-layout">
+            <div class="stats-section-layout stats-section-layout-habits">
                 <div class="stats-overview-panel stats-accent-panel stats-accent-panel-habits">
                     <div class="stats-overview-copy">
                         <span class="stats-overview-label">Фокус периода</span>
@@ -189,11 +212,11 @@
                     </div>
                     <div class="stats-meter-stack">
                         <div class="stats-meter">
-                            <div class="stats-meter-label"><span>Success rate сегодня</span><strong>{{ page_data.habits.success_rate_today }}%</strong></div>
+                            <div class="stats-meter-label"><span>Успех сегодня</span><strong>{{ page_data.habits.success_rate_today }}%</strong></div>
                             <div class="stats-progress-track"><span style="width: {{ page_data.habits.success_rate_today }}%;"></span></div>
                         </div>
                         <div class="stats-meter">
-                            <div class="stats-meter-label"><span>Success rate {{ page_data.range }}</span><strong>{{ current_habit_success }}%</strong></div>
+                            <div class="stats-meter-label"><span>{{ habit_success_labels.get(page_data.range, "Успех за неделю") }}</span><strong>{{ current_habit_success }}%</strong></div>
                             <div class="stats-progress-track"><span style="width: {{ current_habit_success }}%;"></span></div>
                         </div>
                     </div>
@@ -205,9 +228,11 @@
                     <div class="stats-summary-row"><span>Архивные</span><strong>{{ page_data.habits.archived }}</strong></div>
                     <div class="stats-summary-row"><span>На сегодня</span><strong>{{ page_data.habits.due_today }}</strong></div>
                     <div class="stats-summary-row"><span>Выполнено сегодня</span><strong>{{ page_data.habits.completed_today }}</strong></div>
-                    <div class="stats-summary-row"><span>Success rate сегодня</span><strong>{{ page_data.habits.success_rate_today }}%</strong></div>
-                    <div class="stats-summary-row"><span>Success rate 7d</span><strong>{{ page_data.habits.success_rate_7d }}%</strong></div>
-                    <div class="stats-summary-row"><span>Success rate 30d</span><strong>{{ page_data.habits.success_rate_30d }}%</strong></div>
+                    <div class="stats-summary-row"><span>Успех сегодня</span><strong>{{ page_data.habits.success_rate_today }}%</strong></div>
+                    <div class="stats-summary-row"><span>Успех за неделю</span><strong>{{ page_data.habits.success_rate_7d }}%</strong></div>
+                    <div class="stats-summary-row"><span>Успех за месяц</span><strong>{{ page_data.habits.success_rate_30d }}%</strong></div>
+                    <div class="stats-summary-row"><span>Успех за квартал</span><strong>{{ page_data.habits.success_rate_90d }}%</strong></div>
+                    <div class="stats-summary-row"><span>Успех за всё время</span><strong>{{ page_data.habits.success_rate_all }}%</strong></div>
                 </div>
             </div>
 
@@ -236,11 +261,11 @@
 
                 <article class="stats-detail-card">
                     <div class="stats-detail-header">
-                        <h3>Daily trend</h3>
+                        <h3>{{ trend_titles.get(page_data.range, "Дневная динамика") }}</h3>
                         <span>{{ current_period_label }}</span>
                     </div>
                     {% if page_data.habits.completions_by_day %}
-                    <div class="stats-trend-chart" aria-label="Daily trend привычек">
+                    <div class="stats-trend-chart" aria-label="{{ trend_titles.get(page_data.range, 'Дневная динамика') }} привычек">
                         {% for item in page_data.habits.completions_by_day %}
                         <div class="stats-trend-column">
                             <div class="stats-trend-bar"><span style="height: {{ 18 + (item.value * 14) }}px;"></span></div>

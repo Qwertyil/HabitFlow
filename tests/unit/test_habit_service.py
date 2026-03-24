@@ -214,6 +214,22 @@ async def test_create_habit_validates_theme_exists_when_theme_id_set() -> None:
 
 
 @pytest.mark.asyncio
+async def test_create_habit_rejects_markup_like_name() -> None:
+    habit_repo = DummyHabitRepo()
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+
+    with pytest.raises(ValueError, match="символы < или >"):
+        await service.create_habit(
+            HabitCreateAPI(
+                name="<script>habit</script>",
+                schedule_type="daily",
+                schedule_config={},
+            )
+        )
+
+
+@pytest.mark.asyncio
 async def test_update_habit_raises_when_habit_missing() -> None:
     habit_repo = DummyHabitRepo()
     theme_repo = DummyThemeRepo()
@@ -221,6 +237,18 @@ async def test_update_habit_raises_when_habit_missing() -> None:
 
     with pytest.raises(HabitNotFound):
         await service.update_habit(uuid4(), HabitUpdateAPI(name="new"))
+
+
+@pytest.mark.asyncio
+async def test_update_habit_rejects_control_characters_in_name() -> None:
+    habit_id = uuid4()
+    habit_repo = DummyHabitRepo()
+    habit_repo.get_by_id_result = _mk_habit(habit_id=habit_id)
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+
+    with pytest.raises(ValueError, match="управляющие символы"):
+        await service.update_habit(habit_id, HabitUpdateAPI(name="bad\u0007habit"))
 
 
 @pytest.mark.asyncio
@@ -776,6 +804,8 @@ async def test_get_habit_page_statistics_counts_period_success_by_due_occurrence
     assert stats.success_rate_today == 100
     assert stats.success_rate_7d == 43
     assert stats.success_rate_30d == 43
+    assert stats.success_rate_90d == 43
+    assert stats.success_rate_all == 43
     assert habit_repo.list_completion_dates_by_habit_calls == 1
     assert habit_repo.list_completion_dates_calls == 0
 
@@ -810,6 +840,8 @@ async def test_get_habit_page_statistics_keeps_habits_archived_today_in_historic
     assert stats.success_rate_today == 0
     assert stats.success_rate_7d == 50
     assert stats.success_rate_30d == 50
+    assert stats.success_rate_90d == 50
+    assert stats.success_rate_all == 50
     assert [item.value for item in stats.completions_by_day] == [0, 0, 0, 0, 0, 1, 0]
 
 
@@ -841,7 +873,39 @@ async def test_get_habit_page_statistics_counts_interval_cycle_due_occurrences(
     assert stats.success_rate_today == 0
     assert stats.success_rate_7d == 67
     assert stats.success_rate_30d == 67
+    assert stats.success_rate_90d == 67
+    assert stats.success_rate_all == 67
     assert [item.value for item in stats.completions_by_day] == [0, 0, 1, 1, 0, 0, 0]
+
+
+@pytest.mark.asyncio
+async def test_get_habit_page_statistics_supports_all_time_monthly_trend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    today = date(2026, 3, 14)
+    old_habit = _mk_habit(
+        habit_id=uuid4(),
+        name="Archive-proof habit",
+        starts_on=date(2026, 1, 10),
+    )
+
+    habit_repo = DummyHabitRepo()
+    habit_repo.list_result = [old_habit]
+    habit_repo.completions[old_habit.id] = {
+        date(2026, 1, 10),
+        date(2026, 2, 5),
+        date(2026, 2, 12),
+        date(2026, 3, 1),
+    }
+
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    monkeypatch.setattr(service, "_today_utc", lambda: today)
+
+    stats = await service.get_habit_page_statistics("all")
+
+    assert [item.label for item in stats.completions_by_day] == ["01.26", "02.26", "03.26"]
+    assert [item.value for item in stats.completions_by_day] == [1, 2, 1]
 
 
 @pytest.mark.asyncio

@@ -10,6 +10,7 @@ from src.schemas import (
     ThemeUpdate,
     ThemeWithCountResponse,
 )
+from src.validation import validate_user_facing_name
 
 THEME_COLORS = {
     "#34495E",
@@ -20,6 +21,9 @@ THEME_COLORS = {
     "#9B59B6",
     "#F39C12",
     "#E67E22",
+    "#E91E63",
+    "#00BCD4",
+    "#8BC34A",
 }
 
 
@@ -31,11 +35,14 @@ class ThemeService:
         return await self.theme_repo.get_existing_colors_list()
 
     async def create_theme(self, theme_data: ThemeCreate) -> ThemeInDB:
-        existing_name = await self.theme_repo.get_by_name(theme_data.name)
+        validated_name = validate_user_facing_name(
+            theme_data.name, field_label="Название темы"
+        )
+        existing_name = await self.theme_repo.get_by_name(validated_name)
         if existing_name:
             raise ValueError("Theme with this name already exists")
 
-        if theme_data.name.lower() == "все темы":
+        if validated_name.lower() == "все темы":
             raise ValueError("Invalid theme title")
 
         if theme_data.color:
@@ -44,8 +51,8 @@ class ThemeService:
                 raise ValueError("Theme with this color already exists")
             color = theme_data.color
         else:
-            color = await self.generate_color(theme_data.name)
-        theme_data = ThemeCreate(name=theme_data.name, color=color)
+            color = await self.generate_color(validated_name)
+        theme_data = ThemeCreate(name=validated_name, color=color)
         return await self.theme_repo.add(theme_data)
 
     async def get_theme_by_name(self, theme_name: str) -> ThemeInDB | None:
@@ -64,7 +71,10 @@ class ThemeService:
 
         # --- Обработка имени ---
         if "name" in update_dict:
-            new_name = update_dict["name"]
+            new_name = validate_user_facing_name(
+                update_dict["name"], field_label="Название темы"
+            )
+            update_dict["name"] = new_name
             if new_name != old_theme.name:
                 existing = await self.theme_repo.get_by_name(new_name)
                 if existing:

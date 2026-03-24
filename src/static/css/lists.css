@@ -8,9 +8,9 @@
     gap: 0.75rem;
     padding: 1rem;
     overflow-x: auto;
-    background: white;
+    background: var(--surface);
     border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    box-shadow: var(--shadow-subtle);
     scrollbar-width: thin;
 }
 
@@ -73,9 +73,9 @@
     gap: 1rem;
     margin-bottom: 2rem;
     padding: 1.5rem;
-    background: white;
+    background: var(--surface);
     border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-card);
 }
 
 .page-header > * {
@@ -102,10 +102,10 @@
 }
 
 .list-container {
-    background: white;
+    background: var(--surface);
     border-radius: 12px;
     padding: 1.5rem;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-card);
 }
 
 /* Сетка тем */
@@ -166,7 +166,7 @@
 
 .theme-stats .stat {
     padding: 0.25rem 0.75rem;
-    background: white;
+    background: var(--surface);
     border-radius: 20px;
     font-size: 0.8rem;
     color: var(--gray);
@@ -221,9 +221,9 @@
     gap: 2rem;
     margin-bottom: 1.5rem;
     padding: 1rem;
-    background: white;
+    background: var(--surface);
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: var(--shadow-subtle);
 }
 
 .filter-group {
@@ -242,7 +242,7 @@
     padding: 0.5rem;
     border: 1px solid var(--gray-light);
     border-radius: 6px;
-    background-color: white;
+    background-color: var(--surface);
     font-size: 0.9rem;
 }
 
@@ -363,7 +363,7 @@
     flex-wrap: var(--task-item-flex-wrap, nowrap);
     min-width: 0;
     padding: var(--task-item-padding, 1.5rem);
-    background: white;
+    background: var(--surface);
     border-radius: var(--task-item-border-radius, 12px);
     box-shadow: var(--task-item-box-shadow, 0 2px 8px rgba(0,0,0,0.08));
     border-left: 4px solid transparent;
@@ -542,9 +542,9 @@
     align-items: end;
     margin-bottom: 1.5rem;
     padding: 1.5rem;
-    background: white;
+    background: var(--surface);
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: var(--shadow-subtle);
 }
 
 .filter-group {
@@ -568,7 +568,7 @@
     border: 2px solid var(--light);
     border-radius: 8px;
     font-size: 0.9rem;
-    background: white;
+    background: var(--surface);
     cursor: pointer;
     transition: all 0.3s ease;
     min-width: 0;
@@ -770,11 +770,11 @@
     gap: 4px;
     padding: 2px 8px;
     border-radius: 12px;
-    background-color: #f0f7ff;
-    color: #2c5282;
+    background-color: var(--surface-2);
+    color: var(--text-soft);
     font-size: 0.8rem;
     font-weight: 500;
-    border: 1px solid #bee3f8;
+    border: 1px solid var(--border);
     transition: all 0.2s ease;
 }
 
@@ -784,30 +784,8 @@
 }
 
 .task-created-date:hover {
-    background-color: #e6f2ff;
-    border-color: #90cdf4;
-}
-
-/* Темная тема */
-.dark-theme .task-created-date {
-    background-color: #2d3748;
-    color: #90cdf4;
-    border-color: #4a5568;
-}
-
-.dark-theme .task-created-date:hover {
-    background-color: #4a5568;
-    border-color: #63b3ed;
-}
-
-.dark-theme .task-updated {
-    background-color: #2d3748;
-    color: #a0aec0;
-}
-
-.dark-theme .task-updated:hover {
-    background-color: #4a5568;
-    color: #cbd5e0;
+    background-color: var(--surface);
+    border-color: var(--border-strong);
 }
 
 /* Дополнительные адаптивные правки */
@@ -840,9 +818,9 @@
 /* Обновленный дизайн блока привычек (фильтры) */
 .habits-filters {
     padding: 1.1rem;
-    background: linear-gradient(145deg, #ffffff, #f6f9fd);
-    border: 1px solid rgba(52, 152, 219, 0.15);
-    box-shadow: 0 10px 30px rgba(44, 62, 80, 0.08);
+    background: linear-gradient(145deg, var(--surface), var(--surface-2));
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
 }
 
 .habits-filters .filter-group label {
@@ -857,7 +835,7 @@
     min-height: 42px;
     border-radius: 10px;
     border: 1px solid #d4e3f1;
-    background: #fbfdff;
+    background: var(--surface-2);
 }
 
 .habits-filters .btn-order {
@@ -903,8 +881,8 @@
     padding: var(--habit-card-padding, 1rem);
     border-radius: var(--habit-card-border-radius, 16px);
     border: 1px solid #dce8f3;
-    background: linear-gradient(160deg, #ffffff 0%, #f6fbff 100%);
-    box-shadow: 0 8px 20px rgba(31, 53, 72, 0.08);
+    background: linear-gradient(160deg, var(--surface) 0%, var(--surface-2) 100%);
+    box-shadow: var(--shadow-card);
     position: relative;
     overflow: hidden;
 }
@@ -1084,14 +1062,14 @@
 
 .habit-actions .btn-habit-edit {
     border: 1px solid #c9d9e8;
-    background: #ffffff;
-    color: #35526c;
+    background: var(--surface);
+    color: var(--text-soft);
 }
 
 .habit-actions .btn-habit-edit:hover {
-    background: #f1f7fd;
-    border-color: #9bc1e2;
-    color: #204d74;
+    background: var(--surface-2);
+    border-color: var(--border-strong);
+    color: var(--text);
 }
 
 .habit-actions .btn-habit-complete {

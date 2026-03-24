@@ -21,11 +21,24 @@
   display: grid;
   gap: 16px;
   min-width: 0;
+  padding: 14px;
+  background: var(--surface-recessed);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
 }
 
 .sidebar-card {
   padding: 16px;
   min-width: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.sidebar-card + .sidebar-card {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 16px;
 }
 
 .sidebar-header {
@@ -115,9 +128,9 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 13px;
-  border-radius: 14px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  border-radius: var(--radius-inset);
+  background: var(--ambient-accent);
+  border: 1px solid var(--border-subtle);
 }
 
 .sidebar-stat-value {
@@ -171,6 +184,18 @@
   min-width: 0;
 }
 
+/* Desktop: collapse trigger hidden, body always visible */
+.sidebar-collapse-trigger {
+  display: none;
+}
+
+/* On mobile, the sidebar-header inside collapse-body is hidden (title is in the trigger) */
+@media (max-width: 1100px) {
+  .sidebar-header-desktop {
+    display: none;
+  }
+}
+
 .list-page,
 .form-page,
 .stats-page,
@@ -181,12 +206,102 @@
   gap: 20px;
 }
 
-.page-header-card {
+/* ── Page Hero ── */
+
+.page-hero {
+  position: relative;
+  overflow: hidden;
   display: flex;
-  align-items: start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 24px 26px;
+  padding: 28px 32px;
+  border-radius: var(--radius-lg);
+  color: #fff;
+  background: linear-gradient(135deg, var(--navy) 0%, #2f2d72 58%, #3d1e6e 100%);
+  box-shadow: var(--shadow-md);
+}
+
+.page-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 80% 10%, rgba(255, 255, 255, 0.12), transparent 22%),
+    radial-gradient(circle at 0% 100%, rgba(0, 201, 167, 0.14), transparent 30%);
+  pointer-events: none;
+}
+
+.page-hero-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 620px;
+}
+
+.page-hero-title {
+  margin: 0;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 46px;
+  font-weight: 600;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.page-hero-lead {
+  margin: 10px 0 0;
+  max-width: 540px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.page-hero .page-header-actions {
+  position: relative;
+  z-index: 1;
+}
+
+.page-hero-btn {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.page-hero-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.34);
+}
+
+/* Hero variants */
+.page-hero--tasks {
+  background: linear-gradient(135deg, var(--navy) 0%, #2f2d72 58%, #3d1e6e 100%);
+}
+
+.page-hero--tasks::before {
+  background:
+    radial-gradient(circle at 85% 15%, rgba(108, 99, 255, 0.2), transparent 28%),
+    radial-gradient(circle at 5% 90%, rgba(0, 201, 167, 0.12), transparent 30%);
+}
+
+.page-hero--habits {
+  background: linear-gradient(135deg, #065a4e 0%, #039c82 50%, var(--mint) 100%);
+}
+
+.page-hero--habits::before {
+  background:
+    radial-gradient(circle at 85% 15%, rgba(255, 255, 255, 0.14), transparent 24%),
+    radial-gradient(circle at 5% 90%, rgba(0, 100, 80, 0.2), transparent 30%);
+}
+
+.page-hero--themes {
+  background: linear-gradient(135deg, #3d1e6e 0%, #7b4bb5 50%, #c06040 100%);
+}
+
+.page-hero--themes::before {
+  background:
+    radial-gradient(circle at 85% 15%, rgba(255, 179, 71, 0.16), transparent 26%),
+    radial-gradient(circle at 5% 90%, rgba(108, 99, 255, 0.14), transparent 30%);
 }
 
 .page-header-actions {
@@ -212,6 +327,7 @@
   display: grid;
   gap: 16px;
   padding: 18px 20px;
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
 }
 
 .filters-grid {
@@ -301,6 +417,65 @@
 
   .page-sidebar {
     position: static;
+    order: 2;
+  }
+
+  .page-content {
+    order: 1;
+  }
+
+  /* Collapsible sidebar sections on mobile */
+  .sidebar-collapse-body {
+    display: none;
+  }
+
+  .sidebar-collapse.open .sidebar-collapse-body {
+    display: block;
+  }
+
+  .sidebar-collapse.open .sidebar-chevron {
+    transform: rotate(180deg);
+  }
+
+  .sidebar-card {
+    padding: 0;
+  }
+
+  .sidebar-card + .sidebar-card {
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 0;
+  }
+
+  .sidebar-collapse-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 14px 16px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+  }
+
+  .sidebar-collapse-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .sidebar-collapse-trigger .sidebar-chevron {
+    color: var(--muted);
+    font-size: 12px;
+    transition: transform 200ms ease;
+  }
+
+  .sidebar-collapse[open] .sidebar-chevron {
+    transform: rotate(180deg);
+  }
+
+  .sidebar-collapse-body {
+    padding: 0 16px 14px;
   }
 }
 
@@ -309,9 +484,14 @@
     padding: 14px 16px 16px;
   }
 
-  .page-header-card {
-    padding: 18px;
+  .page-hero {
+    padding: 22px 18px;
     flex-direction: column;
+  }
+
+  .page-hero-title {
+    font-size: 34px;
+    line-height: 1;
   }
 
   .page-header-actions {

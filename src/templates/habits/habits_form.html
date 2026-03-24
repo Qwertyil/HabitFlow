@@ -6,6 +6,7 @@
 {% set is_update = habit_data.id is defined %}
 
 {% block title %}{% if is_update %}Редактирование{% else %}Новая{% endif %} привычка - HabitFlow{% endblock %}
+{% block form_hero_class %}form-hero--habits{% endblock %}
 {% block form_icon %}<i class="fa-solid fa-arrow-trend-up"></i>{% endblock %}
 {% block form_heading %}{% if is_update %}Редактирование{% else %}Создание{% endif %} привычки{% endblock %}
 {% block form_description %}Настройте расписание, период и тему так, чтобы привычка работала в реальном дне, а не только в макете.{% endblock %}
