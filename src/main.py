@@ -2,6 +2,7 @@ import asyncio
 import logging
 import secrets
 from contextlib import asynccontextmanager
+from datetime import date
 from typing import Any
 
 import httpx
@@ -334,6 +335,13 @@ async def root(
         theme_name=request.session.get("selected_theme"),
         due_today_only=True,
     )
-    context.update({"tasks": tasks, "habits": habits, "current_page": "home"})
+    context.update(
+        {
+            "tasks": tasks,
+            "habits": habits,
+            "current_page": "home",
+            "today_display": date.today().strftime("%d.%m.%Y"),
+        }
+    )
 
     return templates.TemplateResponse(request, "index.html", context)
