@@ -13,7 +13,7 @@ from src.schemas.habits import (
     HabitScheduleType,
     HabitUpdateAPI,
 )
-from src.services.habits import HabitService
+from src.services.habits import HabitService, _TrendBuckets
 
 
 def _dt(y: int, m: int, d: int) -> datetime:
@@ -1030,3 +1030,388 @@ async def test_get_habit_page_statistics_uses_explicit_reference_time(
         "14.03",
     ]
     assert [item.value for item in stats.top_streaks] == [1]
+
+
+@pytest.mark.asyncio
+async def test_create_get_delete_and_empty_update_use_short_paths(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    habit_id = uuid4()
+    created = _mk_habit(habit_id=habit_id)
+    habit_repo = DummyHabitRepo()
+    habit_repo.add_result = created
+    habit_repo.get_by_id_result = created
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    monkeypatch.setattr(service, "_today_utc", lambda: date(2026, 1, 10))
+
+    created_result = await service.create_habit(
+        HabitCreateAPI(
+            name="Morning walk",
+            schedule_type="daily",
+            schedule_config={},
+        )
+    )
+    fetched = await service.get_habit(habit_id)
+    deleted = await service.delete_habit(habit_id)
+    unchanged = await service.update_habit(habit_id, HabitUpdateAPI())
+
+    assert created_result == created
+    assert fetched == created
+    assert deleted is True
+    assert unchanged == created
+    assert habit_repo.archive_expired_calls >= 2
+
+
+@pytest.mark.asyncio
+async def test_update_habit_rejects_unknown_theme_on_update() -> None:
+    habit_id = uuid4()
+    habit_repo = DummyHabitRepo()
+    habit_repo.get_by_id_result = _mk_habit(habit_id=habit_id)
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+
+    with pytest.raises(ValueError, match="Theme not found"):
+        await service.update_habit(habit_id, HabitUpdateAPI(theme_id=uuid4()))
+
+
+@pytest.mark.asyncio
+async def test_update_habit_rejects_end_date_before_start_date() -> None:
+    habit_id = uuid4()
+    habit_repo = DummyHabitRepo()
+    habit_repo.get_by_id_result = _mk_habit(
+        habit_id=habit_id,
+        starts_on=date(2026, 1, 10),
+    )
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+
+    with pytest.raises(ValueError, match="ends_on must be greater than or equal"):
+        await service.update_habit(
+            habit_id,
+            HabitUpdateAPI(ends_on=date(2026, 1, 9)),
+        )
+
+
+@pytest.mark.asyncio
+async def test_update_habit_auto_archives_when_new_end_date_is_in_the_past(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    habit_id = uuid4()
+    habit_repo = DummyHabitRepo()
+    habit_repo.get_by_id_result = _mk_habit(
+        habit_id=habit_id,
+        starts_on=date(2026, 1, 1),
+    )
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    monkeypatch.setattr(service, "_today_utc", lambda: date(2026, 1, 10))
+
+    result = await service.update_habit(
+        habit_id,
+        HabitUpdateAPI(ends_on=date(2026, 1, 5)),
+    )
+
+    assert result is not None
+    assert result.ends_on == date(2026, 1, 5)
+    assert result.is_archived is True
+
+
+@pytest.mark.asyncio
+async def test_list_habits_due_today_only_sorts_by_streak_and_paginates_manually(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    today = date(2026, 1, 5)
+    oldest = _mk_habit(habit_id=uuid4(), created_at=_dt(2026, 1, 1))
+    middle = _mk_habit(habit_id=uuid4(), created_at=_dt(2026, 1, 2))
+    newest = _mk_habit(habit_id=uuid4(), created_at=_dt(2026, 1, 3))
+
+    habit_repo = DummyHabitRepo()
+    habit_repo.list_habits_result = ([oldest, middle, newest], 3)
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    monkeypatch.setattr(service, "_today_utc", lambda: today)
+
+    items, total = await service.list_habits(
+        page=2,
+        per_page=1,
+        status="active",
+        sort="streak",
+        order="desc",
+        due_today_only=True,
+    )
+
+    assert total == 3
+    assert len(items) == 1
+    assert items[0].id == middle.id
+
+
+@pytest.mark.asyncio
+async def test_due_today_filter_helper_stops_when_repo_returns_empty_batch() -> None:
+    habit_repo = DummyHabitRepo()
+    habit_repo.list_habits_result = ([], 0)
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+
+    habits = await service._list_habits_for_due_today_filter(
+        per_page=5,
+        theme_id=None,
+        today=date(2026, 1, 5),
+        status="active",
+        schedule_type="all",
+        sort="created_at",
+        order="desc",
+    )
+
+    assert habits == []
+    assert habit_repo.list_habits_last_kwargs is not None
+    assert habit_repo.list_habits_last_kwargs["limit"] == 100
+
+
+def test_interval_cycle_due_today_handles_future_anchor_and_empty_history() -> None:
+    habit_repo = DummyHabitRepo()
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    future_habit = _mk_habit(
+        schedule_type="interval_cycle",
+        schedule_config={"active_days": 2, "break_days": 1},
+        starts_on=date(2026, 1, 10),
+    )
+    fresh_habit = _mk_habit(
+        schedule_type="interval_cycle",
+        schedule_config={"active_days": 2, "break_days": 1},
+        starts_on=date(2026, 1, 1),
+    )
+
+    assert (
+        service._is_interval_cycle_due_today(
+            future_habit,
+            today=date(2026, 1, 5),
+            completion_dates=set(),
+        )
+        is False
+    )
+    assert (
+        service._is_interval_cycle_due_today(
+            fresh_habit,
+            today=date(2026, 1, 1),
+            completion_dates=set(),
+        )
+        is True
+    )
+
+
+def test_statistics_helpers_cover_weekly_and_empty_breakdowns() -> None:
+    habit_repo = DummyHabitRepo()
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    trend_buckets = service._initialize_trend_buckets(
+        "90d",
+        date(2026, 1, 1),
+        date(2026, 3, 31),
+    )
+
+    service._increment_trend_bucket(trend_buckets, date(2026, 1, 5))
+    service._increment_trend_bucket(trend_buckets, date(2025, 12, 31))
+    weekly_breakdown = service._build_completion_breakdown(trend_buckets)
+    empty_breakdown = service._build_completion_breakdown(
+        _TrendBuckets(start=date(2026, 1, 1))
+    )
+
+    assert trend_buckets.weekly_counts is not None
+    assert weekly_breakdown[0].label == "01.01-07.01"
+    assert weekly_breakdown[0].value == 1
+    assert empty_breakdown == []
+
+
+def test_progress_and_occurrence_helpers_cover_extra_schedule_types() -> None:
+    habit_repo = DummyHabitRepo()
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    invalid_period_payload = _mk_habit().model_dump()
+    invalid_period_payload["starts_on"] = date(2026, 1, 10)
+    invalid_period_payload["ends_on"] = date(2026, 1, 5)
+    invalid_period_habit = HabitInDB.model_construct(**invalid_period_payload)
+    unsupported_payload = _mk_habit(ends_on=date(2026, 1, 5)).model_dump()
+    unsupported_payload["schedule_type"] = "custom"
+    unsupported_payload["schedule_config"] = {}
+    unsupported_habit = HabitInDB.model_construct(**unsupported_payload)
+
+    assert (
+        service._calculate_progress_percent(
+            invalid_period_habit,
+            set(),
+            date(2026, 1, 10),
+        )
+        == 0.0
+    )
+    assert (
+        service._calculate_progress_percent(
+            unsupported_habit,
+            {date(2026, 1, 5)},
+            date(2026, 1, 5),
+        )
+        == 0.0
+    )
+    assert service._required_occurrences_in_period(
+        schedule_type="weekly_days",
+        schedule_config={"days": ["mon", "wed"]},
+        period_start=date(2026, 1, 1),
+        period_end=date(2026, 1, 7),
+    ) == 2
+    assert service._required_occurrences_in_period(
+        schedule_type="monthly_day",
+        schedule_config={"day": 31},
+        period_start=date(2026, 1, 15),
+        period_end=date(2026, 3, 31),
+    ) == 3
+    assert service._required_occurrences_in_period(
+        schedule_type="yearly_date",
+        schedule_config={"month": 2, "day": 29},
+        period_start=date(2026, 1, 1),
+        period_end=date(2027, 12, 31),
+    ) == 2
+    assert service._required_occurrences_in_period(
+        schedule_type="custom",
+        schedule_config={},
+        period_start=date(2026, 1, 1),
+        period_end=date(2026, 1, 2),
+    ) == 0
+
+
+@pytest.mark.asyncio
+async def test_theme_label_datetime_and_reference_helpers_cover_fallbacks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    missing_theme_habit = _mk_habit(theme_id=uuid4())
+    habit_repo = DummyHabitRepo()
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    monkeypatch.setattr(service, "_today_utc", lambda: date(2026, 1, 5))
+
+    assert await service._get_habit_theme_label(
+        _mk_habit(),
+        theme_cache={},
+    ) == "Без темы"
+    assert await service._get_habit_theme_label(
+        missing_theme_habit,
+        theme_cache={},
+    ) == "Без темы"
+    assert service._to_utc_datetime(datetime(2026, 1, 5, 12, 0, 0)).tzinfo is UTC
+    assert service._resolve_reference_date(None) == date(2026, 1, 5)
+
+
+@pytest.mark.asyncio
+async def test_complete_and_incomplete_habit_raise_missing_archived_and_future_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    missing_habit_id = uuid4()
+    archived_habit_id = uuid4()
+    active_habit_id = uuid4()
+    habit_repo = DummyHabitRepo()
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    today = date(2026, 1, 5)
+    monkeypatch.setattr(service, "_today_utc", lambda: today)
+
+    with pytest.raises(HabitNotFound):
+        await service.complete_habit(missing_habit_id, today)
+
+    with pytest.raises(HabitNotFound):
+        await service.incomplete_habit(missing_habit_id, today)
+
+    habit_repo.get_by_id_result = _mk_habit(
+        habit_id=archived_habit_id,
+        is_archived=True,
+    )
+    with pytest.raises(ValueError, match="archived habit"):
+        await service.incomplete_habit(archived_habit_id, today)
+
+    habit_repo.get_by_id_result = _mk_habit(habit_id=active_habit_id)
+    with pytest.raises(ValueError, match="future date"):
+        await service.incomplete_habit(active_habit_id, today + timedelta(days=1))
+
+
+@pytest.mark.asyncio
+async def test_streak_and_expected_date_helpers_cover_remaining_schedule_branches() -> (
+    None
+):
+    habit_repo = DummyHabitRepo()
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    anchor_date = date(2026, 1, 1)
+    future_habit = _mk_habit(starts_on=date(2026, 2, 1))
+
+    assert (
+        await service._calculate_streak(
+            future_habit,
+            completion_dates={date(2026, 2, 1)},
+            reference_date=date(2026, 1, 31),
+        )
+        == 0
+    )
+    assert service._latest_expected_date(
+        "weekly_days",
+        {"days": ["mon"]},
+        date(2026, 1, 7),
+        anchor_date,
+    ) == date(2026, 1, 5)
+    assert service._latest_expected_date(
+        "monthly_day",
+        {"day": 31},
+        date(2026, 2, 1),
+        anchor_date,
+    ) == date(2026, 1, 31)
+    assert service._latest_expected_date(
+        "monthly_day",
+        {"day": 31},
+        date(2026, 3, 31),
+        anchor_date,
+    ) == date(2026, 3, 31)
+    assert service._latest_expected_date(
+        "yearly_date",
+        {"month": 12, "day": 31},
+        date(2026, 1, 1),
+        anchor_date,
+    ) == date(2025, 12, 31)
+    assert service._latest_expected_date(
+        "yearly_date",
+        {"month": 12, "day": 31},
+        date(2026, 12, 31),
+        anchor_date,
+    ) == date(2026, 12, 31)
+    assert service._previous_expected_date(
+        "weekly_days",
+        {"days": ["mon", "wed"]},
+        date(2026, 1, 7),
+        anchor_date,
+    ) == date(2026, 1, 5)
+    assert service._previous_expected_date(
+        "monthly_day",
+        {"day": 31},
+        date(2026, 3, 31),
+        anchor_date,
+    ) == date(2026, 2, 28)
+    assert service._previous_expected_date(
+        "yearly_date",
+        {"month": 2, "day": 29},
+        date(2027, 2, 28),
+        anchor_date,
+    ) == date(2026, 2, 28)
+    assert service._previous_month(2026, 1) == (2025, 12)
+    assert service._previous_month(2026, 3) == (2026, 2)
+
+
+def test_validation_helpers_raise_for_invalid_schedule_values() -> None:
+    habit_repo = DummyHabitRepo()
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+
+    with pytest.raises(ValueError, match="days must be list"):
+        service._weekday_indexes("mon")
+
+    with pytest.raises(ValueError, match="days must contain only mon..sun"):
+        service._weekday_indexes(["bad"])
+
+    with pytest.raises(ValueError, match="day must be integer"):
+        service._get_int_config({}, "day")
