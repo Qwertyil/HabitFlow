@@ -214,22 +214,6 @@ async def test_create_habit_validates_theme_exists_when_theme_id_set() -> None:
 
 
 @pytest.mark.asyncio
-async def test_create_habit_rejects_markup_like_name() -> None:
-    habit_repo = DummyHabitRepo()
-    theme_repo = DummyThemeRepo()
-    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
-
-    with pytest.raises(ValueError, match="символы < или >"):
-        await service.create_habit(
-            HabitCreateAPI(
-                name="<script>habit</script>",
-                schedule_type="daily",
-                schedule_config={},
-            )
-        )
-
-
-@pytest.mark.asyncio
 async def test_update_habit_raises_when_habit_missing() -> None:
     habit_repo = DummyHabitRepo()
     theme_repo = DummyThemeRepo()

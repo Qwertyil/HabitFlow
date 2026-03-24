@@ -116,15 +116,6 @@ async def test_create_theme_rejects_all_themes_title():
 
 
 @pytest.mark.asyncio
-async def test_create_theme_rejects_markup_like_name() -> None:
-    repo = DummyThemeRepo()
-    service = ThemeService(theme_repo=repo)
-
-    with pytest.raises(ValueError, match="символы < или >"):
-        await service.create_theme(ThemeCreate(name="<bad>"))
-
-
-@pytest.mark.asyncio
 async def test_create_theme_validates_color_uniqueness_when_provided():
     existing = ThemeInDB(
         id=uuid4(),

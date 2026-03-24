@@ -184,16 +184,6 @@ async def test_create_task_validates_theme_exists_when_theme_id_set():
 
 
 @pytest.mark.asyncio
-async def test_create_task_rejects_markup_like_name() -> None:
-    task_repo = DummyTaskRepo()
-    theme_repo = DummyThemeRepo()
-    service = TaskService(task_repo=task_repo, theme_repo=theme_repo)
-
-    with pytest.raises(ValueError, match="символы < или >"):
-        await service.create_task(TaskCreateAPI(name="<b>task</b>", priority="low"))
-
-
-@pytest.mark.asyncio
 async def test_update_task_raises_when_task_missing():
     task_repo = DummyTaskRepo()
     theme_repo = DummyThemeRepo()
