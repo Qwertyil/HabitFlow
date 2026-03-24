@@ -210,6 +210,16 @@
         inits.push(initFn);
     }
 
+    function closeDismissibleDetails(target) {
+        document
+            .querySelectorAll("details[data-close-on-outside-click][open]")
+            .forEach((details) => {
+                if (!details.contains(target)) {
+                    details.open = false;
+                }
+            });
+    }
+
     function initStatsTabs(root) {
         const page = root.querySelector(".stats-page");
         if (!page) {
@@ -309,6 +319,8 @@
     }
 
     document.addEventListener("click", (event) => {
+        closeDismissibleDetails(event.target);
+
         const themeToggle = event.target.closest("[data-theme-toggle]");
         if (themeToggle) {
             event.preventDefault();

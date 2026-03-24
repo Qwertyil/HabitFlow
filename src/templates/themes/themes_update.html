@@ -1,6 +1,7 @@
 {% extends "base_form.html" %}
 
 {% block title %}Обновление темы - HabitFlow{% endblock %}
+{% block form_hero_class %}form-hero--themes{% endblock %}
 {% block form_icon %}<i class="fa-solid fa-palette"></i>{% endblock %}
 {% block form_heading %}Обновление темы {{ theme_name }}{% endblock %}
 {% block form_description %}Обновите название и цвет, чтобы тема оставалась читаемой во всех фильтрах и карточках.{% endblock %}
@@ -21,23 +22,19 @@
         <i class="fa-solid fa-droplet"></i>
         <h3>Цвет</h3>
     </div>
-    <div class="selection-grid themes">
+    <div class="color-picker-grid">
         {% for color in colors %}
-        <label class="selection-option">
+        <label class="color-picker-option">
             <input type="radio" id="color-{{ loop.index }}" name="color" value="{{ color }}" {% if loop.first %}checked{% endif %}>
-            <span class="selection-card">
-                <span class="selection-dot" style="width: 18px; height: 18px; background: {{ color }};"></span>
-                <span class="selection-title">{{ color }}</span>
-                <span class="selection-meta">Цвет темы</span>
+            <span class="color-picker-swatch" style="--swatch-color: {{ color }};" title="{{ color }}">
+                <i class="fa-solid fa-check color-picker-check"></i>
             </span>
         </label>
         {% endfor %}
-        <label class="selection-option">
+        <label class="color-picker-option">
             <input type="radio" id="color-random" name="color" value="randoms">
-            <span class="selection-card">
-                <span class="selection-icon"><i class="fa-solid fa-dice"></i></span>
-                <span class="selection-title">Случайный</span>
-                <span class="selection-meta">Подобрать заново</span>
+            <span class="color-picker-swatch color-picker-swatch--random" title="Случайный">
+                <i class="fa-solid fa-dice"></i>
             </span>
         </label>
     </div>

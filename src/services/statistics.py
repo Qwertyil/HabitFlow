@@ -105,7 +105,7 @@ class StatisticsService:
             ),
             StatsKpi(
                 key="success_rate",
-                label="Success rate",
+                label="Успех сегодня",
                 value=f"{habit_stats.success_rate_today}%",
                 hint="Текущий успех по обязательным привычкам на сегодня.",
             ),

@@ -1,6 +1,7 @@
 {% extends "base_form.html" %}
 
 {% block title %}Новая задача - HabitFlow{% endblock %}
+{% block form_hero_class %}form-hero--tasks{% endblock %}
 {% block form_icon %}<i class="fa-regular fa-circle-check"></i>{% endblock %}
 {% block form_heading %}{% if task.name %}Редактирование{% else %}Создание{% endif %} задачи{% endblock %}
 {% block form_description %}Соберите задачу из основной информации, темы и приоритета без лишних шагов.{% endblock %}

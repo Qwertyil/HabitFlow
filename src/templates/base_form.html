@@ -3,13 +3,13 @@
 {% block content %}
 <div class="form-page">
     <div class="form-shell">
-        <header class="surface-card form-header-card">
-            <span class="form-icon">
+        <header class="form-hero {% block form_hero_class %}form-hero--default{% endblock %}">
+            <span class="form-hero-icon">
                 {% block form_icon %}<i class="fa-solid fa-plus"></i>{% endblock %}
             </span>
-            <div class="form-header-copy">
-                <h1 class="form-title-text">{% block form_heading %}Форма{% endblock %}</h1>
-                <p class="form-description">{% block form_description %}Описание формы{% endblock %}</p>
+            <div class="form-hero-copy">
+                <h1 class="form-hero-title">{% block form_heading %}Форма{% endblock %}</h1>
+                <p class="form-hero-lead">{% block form_description %}Описание формы{% endblock %}</p>
             </div>
         </header>
 

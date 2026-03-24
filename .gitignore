@@ -9,3 +9,4 @@ htmlcov/
 output/
 poetry.toml
 %SystemDrive%/
+.playwright-mcp/

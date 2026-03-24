@@ -133,3 +133,20 @@ function initMainPageInteractions(root = document) {
 }
 
 window.HabitFlowUI.registerInit(initMainPageInteractions);
+
+/* Sidebar collapse toggle for mobile */
+function initSidebarCollapse(root) {
+    (root || document).querySelectorAll("[data-sidebar-toggle]").forEach(function (trigger) {
+        if (trigger.dataset.boundSidebarToggle === "1") return;
+        trigger.dataset.boundSidebarToggle = "1";
+        trigger.addEventListener("click", function (e) {
+            if (e.target.closest("a")) return;
+            var section = trigger.closest(".sidebar-collapse");
+            if (section) {
+                section.classList.toggle("open");
+                trigger.setAttribute("aria-expanded", section.classList.contains("open"));
+            }
+        });
+    });
+}
+window.HabitFlowUI.registerInit(initSidebarCollapse);

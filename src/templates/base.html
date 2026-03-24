@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="ru">
-{% set asset_v = "v2-20260322c" %}
+{% set asset_v = "v4-20260322a" %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token|default('', true) }}">
     <title>{% block title %}HabitFlow - Управляй своими привычками{% endblock %}</title>
-    <script>
+    <script nonce="{{ request.state.csp_nonce|default('', true) }}">
         (function() {
             const savedTheme = localStorage.getItem('habitflow-ui-theme');
             const theme = savedTheme === 'dark' ? 'dark' : 'light';
@@ -87,7 +87,7 @@
                 </button>
 
                 {% if current_user %}
-                <details class="nav-user-menu">
+                <details class="nav-user-menu" data-close-on-outside-click="true">
                     <summary class="nav-user-trigger" title="{{ current_user_display_name or current_user.email }}">
                         <span class="nav-avatar">{{ user_initial }}</span>
                         <span class="nav-user-copy">
@@ -121,60 +121,75 @@
             {% if not hide_sidebar %}
             <aside class="page-sidebar">
                 {% block sidebar %}
-                <section class="surface-card sidebar-card">
-                    <div class="sidebar-header">
+                <section class="sidebar-card sidebar-collapse">
+                    <button type="button" class="sidebar-collapse-trigger" aria-expanded="false" data-sidebar-toggle>
                         <h2 class="sidebar-title"><i class="fa-solid fa-swatchbook"></i> Темы</h2>
-                        <a href="/themes" class="sidebar-action" data-enhanced-nav="true">Настроить</a>
-                    </div>
-                    <div class="theme-filter-list">
-                        {% for topic in themes %}
-                        <a
-                            href="?theme={{ topic.name|urlencode }}"
-                            class="theme-filter-link {% if topic.is_active %}active{% endif %}"
-                            data-theme-id="{{ topic.id }}"
-                            title="{{ topic.name }}"
-                            data-enhanced-nav="true"
-                        >
-                            <span class="theme-dot" style="background: {{ topic.color }};"></span>
-                            <span class="theme-filter-name">{{ topic.name }}</span>
-                        </a>
-                        {% endfor %}
+                        <span class="sidebar-collapse-right">
+                            <a href="/themes" class="sidebar-action" data-enhanced-nav="true">Настроить</a>
+                            <span class="sidebar-chevron"><i class="fa-solid fa-chevron-down"></i></span>
+                        </span>
+                    </button>
+                    <div class="sidebar-collapse-body">
+                        <div class="sidebar-header sidebar-header-desktop">
+                            <h2 class="sidebar-title"><i class="fa-solid fa-swatchbook"></i> Темы</h2>
+                            <a href="/themes" class="sidebar-action" data-enhanced-nav="true">Настроить</a>
+                        </div>
+                        <div class="theme-filter-list">
+                            {% for topic in themes %}
+                            <a
+                                href="?theme={{ topic.name|urlencode }}"
+                                class="theme-filter-link {% if topic.is_active %}active{% endif %}"
+                                data-theme-id="{{ topic.id }}"
+                                title="{{ topic.name }}"
+                                data-enhanced-nav="true"
+                            >
+                                <span class="theme-dot" style="background: {{ topic.color }};"></span>
+                                <span class="theme-filter-name">{{ topic.name }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
                     </div>
                 </section>
 
-                <section class="surface-card sidebar-card">
-                    <div class="sidebar-header">
+                <section class="sidebar-card sidebar-collapse">
+                    <button type="button" class="sidebar-collapse-trigger" aria-expanded="false" data-sidebar-toggle>
                         <h2 class="sidebar-title"><i class="fa-solid fa-chart-pie"></i> Статистика</h2>
-                    </div>
-                    <div class="sidebar-stats">
-                        <div class="sidebar-stat">
-                            <span class="sidebar-stat-value" id="stat-active-tasks">{{ stats_data.active_tasks|default(0) }}</span>
-                            <span class="sidebar-stat-copy">активных задач</span>
+                        <span class="sidebar-chevron"><i class="fa-solid fa-chevron-down"></i></span>
+                    </button>
+                    <div class="sidebar-collapse-body">
+                        <div class="sidebar-header sidebar-header-desktop">
+                            <h2 class="sidebar-title"><i class="fa-solid fa-chart-pie"></i> Статистика</h2>
                         </div>
-                        <div class="sidebar-stat">
-                            <span class="sidebar-stat-value" id="stat-total-habits">{{ stats_data.total_habits|default(0) }}</span>
-                            <span class="sidebar-stat-copy">привычек всего</span>
-                        </div>
-                        <div class="sidebar-stat">
-                            <span class="sidebar-stat-value" id="stat-active-habits">{{ stats_data.active_habits|default(0) }}</span>
-                            <span class="sidebar-stat-copy">активных привычек</span>
-                        </div>
-                        <div class="sidebar-stat">
-                            <span class="sidebar-stat-value" id="stat-due-habits-today">{{ stats_data.due_habits_today|default(0) }}</span>
-                            <span class="sidebar-stat-copy">на сегодня</span>
-                        </div>
-                        <div class="sidebar-progress">
-                            <div class="sidebar-progress-track">
-                                <span class="sidebar-progress-fill" style="width: {{ success_rate }}%; background: {{ success_color }};"></span>
+                        <div class="sidebar-stats">
+                            <div class="sidebar-stat">
+                                <span class="sidebar-stat-value" id="stat-active-tasks">{{ stats_data.active_tasks|default(0) }}</span>
+                                <span class="sidebar-stat-copy">активных задач</span>
                             </div>
-                            <div class="sidebar-progress-copy">
-                                <span
-                                    id="stat-success-rate"
-                                    style="color: {{ success_color }};"
-                                    data-due-habits-today="{{ stats_data.due_habits_today|default(0) }}"
-                                    data-completed-habits-today="{{ stats_data.completed_habits_today|default(0) }}"
-                                >{{ success_rate }}%</span>
-                                <span class="sidebar-stat-copy">успех сегодня</span>
+                            <div class="sidebar-stat">
+                                <span class="sidebar-stat-value" id="stat-total-habits">{{ stats_data.total_habits|default(0) }}</span>
+                                <span class="sidebar-stat-copy">привычек всего</span>
+                            </div>
+                            <div class="sidebar-stat">
+                                <span class="sidebar-stat-value" id="stat-active-habits">{{ stats_data.active_habits|default(0) }}</span>
+                                <span class="sidebar-stat-copy">активных привычек</span>
+                            </div>
+                            <div class="sidebar-stat">
+                                <span class="sidebar-stat-value" id="stat-due-habits-today">{{ stats_data.due_habits_today|default(0) }}</span>
+                                <span class="sidebar-stat-copy">на сегодня</span>
+                            </div>
+                            <div class="sidebar-progress">
+                                <div class="sidebar-progress-track">
+                                    <span class="sidebar-progress-fill" style="width: {{ success_rate }}%; background: {{ success_color }};"></span>
+                                </div>
+                                <div class="sidebar-progress-copy">
+                                    <span
+                                        id="stat-success-rate"
+                                        style="color: {{ success_color }};"
+                                        data-due-habits-today="{{ stats_data.due_habits_today|default(0) }}"
+                                        data-completed-habits-today="{{ stats_data.completed_habits_today|default(0) }}"
+                                    >{{ success_rate }}%</span>
+                                    <span class="sidebar-stat-copy">успех сегодня</span>
+                                </div>
                             </div>
                         </div>
                     </div>

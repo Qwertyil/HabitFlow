@@ -2,16 +2,13 @@
 
 {% block content %}
 <div class="list-page">
-    <header class="surface-card page-header-card">
-        <div>
-            <h1 class="page-title">
-                {% block page_icon %}{% endblock %}
-                {% block page_title %}Список{% endblock %}
-            </h1>
-            <p class="page-lead">{% block page_lead %}Управляйте своими записями без лишнего шума.{% endblock %}</p>
+    <header class="page-hero {% block page_hero_class %}page-hero--default{% endblock %}">
+        <div class="page-hero-copy">
+            <h1 class="page-hero-title">{% block page_title %}Список{% endblock %}</h1>
+            <p class="page-hero-lead">{% block page_lead %}Управляйте своими записями без лишнего шума.{% endblock %}</p>
         </div>
         <div class="page-header-actions">
-            <a href="{% block create_url %}#{% endblock %}" class="btn btn-primary" data-enhanced-nav="true">
+            <a href="{% block create_url %}#{% endblock %}" class="btn btn-primary page-hero-btn" data-enhanced-nav="true">
                 <i class="fa-solid fa-plus"></i>
                 {% block create_button_text %}Добавить{% endblock %}
             </a>

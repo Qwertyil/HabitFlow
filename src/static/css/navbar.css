@@ -7,8 +7,8 @@
     radial-gradient(circle at top left, rgba(255, 138, 91, 0.16), transparent 28%),
     radial-gradient(circle at top right, rgba(123, 109, 255, 0.22), transparent 34%),
     linear-gradient(135deg, rgba(18, 23, 49, 0.98), rgba(35, 28, 82, 0.97) 56%, rgba(16, 72, 96, 0.94) 100%);
-  border-bottom: 1px solid rgba(171, 160, 255, 0.2);
-  box-shadow: 0 16px 40px rgba(12, 16, 34, 0.24);
+  border-bottom: 1px solid rgba(171, 160, 255, 0.26);
+  box-shadow: 0 16px 40px rgba(12, 16, 34, 0.28);
 }
 
 .app-navbar-inner {

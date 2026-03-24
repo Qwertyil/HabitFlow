@@ -95,6 +95,7 @@
   display: grid;
   gap: 16px;
   padding: 22px;
+  box-shadow: var(--shadow-card);
 }
 
 .card-header-row {
@@ -127,9 +128,10 @@
 .dashboard-task-card,
 .dashboard-habit-card {
   position: relative;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-subtle);
   border-radius: 16px;
-  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+  background: var(--surface-2);
+  box-shadow: none;
 }
 
 .dashboard-task-card {
@@ -246,7 +248,7 @@
   background: linear-gradient(135deg, #fff8e6, #ffefc3);
   border: 1px solid rgba(255, 208, 74, 0.34);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card), inset 0 0 40px rgba(255, 208, 74, 0.06);
 }
 
 html[data-ui-theme="dark"] .quote-card {

@@ -6,7 +6,7 @@
 {% set current_order = request.query_params.get('order', 'desc') %}
 
 {% block title %}Привычки - HabitFlow{% endblock %}
-{% block page_icon %}<i class="fa-solid fa-arrow-trend-up"></i>{% endblock %}
+{% block page_hero_class %}page-hero--habits{% endblock %}
 {% block page_title %}Привычки{% endblock %}
 {% block page_lead %}Следите за сериями и дневным статусом без лишних переходов по страницам.{% endblock %}
 {% block create_url %}/habits/new{% endblock %}
