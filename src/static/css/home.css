@@ -96,6 +96,7 @@
   gap: 16px;
   padding: 22px;
   box-shadow: var(--shadow-card);
+  min-width: 0;
 }
 
 .card-header-row {
@@ -123,6 +124,7 @@
 .dashboard-habit-list {
   display: grid;
   gap: 12px;
+  min-width: 0;
 }
 
 .dashboard-task-card,
@@ -139,6 +141,7 @@
   align-items: center;
   gap: 14px;
   padding: 14px 16px 14px 18px;
+  min-width: 0;
 }
 
 .dashboard-task-card::before {
@@ -170,6 +173,7 @@
   margin: 0;
   font-size: 15px;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .dashboard-task-description {
@@ -177,6 +181,13 @@
   color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.dashboard-task-card > .tag,
+.dashboard-task-card > .badge {
+  flex-shrink: 0;
 }
 
 .task-theme-badge {

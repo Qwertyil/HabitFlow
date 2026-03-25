@@ -84,6 +84,13 @@
   align-items: start;
   justify-content: space-between;
   gap: 16px;
+  min-width: 0;
+}
+
+/* Flex item: allow shrinking so long unbroken strings wrap instead of overflowing */
+.task-header > div:first-child {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .task-title {
@@ -91,6 +98,7 @@
   font-size: 15px;
   font-weight: 700;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .task-title.completed {
@@ -103,6 +111,8 @@
   color: var(--muted);
   font-size: 13px;
   line-height: 1.55;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .task-meta {
@@ -110,6 +120,7 @@
   flex-wrap: wrap;
   justify-content: end;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .task-priority.low {
@@ -132,6 +143,7 @@
   align-items: center;
   gap: 8px;
   padding: 16px 18px 16px 0;
+  flex-shrink: 0;
 }
 
 .tasks-pagination {
