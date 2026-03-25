@@ -10,7 +10,7 @@ class TaskBase(BaseModel):
     name: str = Field(max_length=46, description="Название задачи, обязательное поле")
     description: str | None = Field(
         None,
-        max_length=1000,
+        max_length=336,
         description="Подробное описание задачи (необязательное поле)",
     )
     theme_id: UUID | None = Field(
@@ -51,7 +51,7 @@ class TaskUpdate(BaseModel):
     )
     description: str | None = Field(
         None,
-        max_length=1000,
+        max_length=336,
         description="Подробное описание задачи (необязательное поле)",
     )
     theme_id: UUID | None = None
@@ -70,7 +70,7 @@ class TaskUpdateAPI(BaseModel):
     )
     description: str | None = Field(
         None,
-        max_length=1000,
+        max_length=336,
         description="Подробное описание задачи (необязательное поле)",
     )
     theme_id: UUID | None = None
