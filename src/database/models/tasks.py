@@ -6,6 +6,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Text,
 )
 from sqlalchemy.orm import relationship
 
@@ -27,7 +28,7 @@ class Task(OwnedModel):
 
     name = Column(String(46), nullable=False)
     theme_id = Column(UUID, ForeignKey("themes.id", ondelete="SET NULL"), nullable=True)
-    description = Column(String(200), nullable=True)
+    description = Column(Text, nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True, default=None)
     priority_id = Column(UUID, ForeignKey("priorities.id"), nullable=False)
 

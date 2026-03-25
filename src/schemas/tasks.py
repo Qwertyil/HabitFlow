@@ -7,17 +7,19 @@ from .base import InDBBase
 
 
 class TaskBase(BaseModel):
-    name: str = Field(max_length=46, description="Название задачи, обязательное поле")
+    name: str = Field(
+        min_length=1, max_length=46, description="Название задачи, обязательное поле"
+    )
     description: str | None = Field(
         None,
-        max_length=1000,
+        max_length=336,
         description="Подробное описание задачи (необязательное поле)",
     )
     theme_id: UUID | None = Field(
         None,
-        description="Тема задачи"
-        "Может быть действительным UUID темы"
-        "либо строкой 'NoTheme' | пустым значением для обозначения отсутствия темы",
+        description="Тема задачи. "
+        "Может быть действительным UUID темы, "
+        "либо строкой 'NoTheme' | отсутсвующим полем для обозначения отсутствия темы",
     )
 
 
@@ -28,8 +30,8 @@ class TaskCreate(TaskBase):
 
     @field_validator("theme_id", mode="before")
     @classmethod
-    def validate_hex_color(cls, v: object) -> object:
-        return TaskCreateAPI.empty_str_to_none(v)
+    def normalize_theme_id(cls, v: object) -> object:
+        return TaskCreateAPI.normalize_theme_value(v)
 
 
 class TaskCreateAPI(TaskBase):
@@ -39,48 +41,34 @@ class TaskCreateAPI(TaskBase):
 
     @field_validator("theme_id", mode="before")
     @classmethod
-    def empty_str_to_none(cls, v: object) -> object:
+    def normalize_theme_value(cls, v: object) -> object:
         if v == "NoTheme" or v == "00000000-0000-0000-0000-000000000001":
             return None
         return v
 
 
-class TaskUpdate(BaseModel):
+class TaskUpdateBase(BaseModel):
     name: str | None = Field(
-        None, max_length=46, description="Название задачи, обязательное поле"
+        None, min_length=1, max_length=46, description="Название задачи"
     )
     description: str | None = Field(
-        None,
-        max_length=1000,
-        description="Подробное описание задачи (необязательное поле)",
+        None, max_length=336, description="Подробное описание задачи"
     )
     theme_id: UUID | None = None
+    completed_at: datetime | None = None
+
+    @field_validator("theme_id", mode="before")
+    @classmethod
+    def normalize_theme_id(cls, v: object) -> object:
+        return TaskCreateAPI.normalize_theme_value(v)
+
+
+class TaskUpdate(TaskUpdateBase):
     priority_id: UUID | None = None
-    completed_at: datetime | None = None
-
-    @field_validator("theme_id", mode="before")
-    @classmethod
-    def validate_hex_color(cls, v: object) -> object:
-        return TaskCreateAPI.empty_str_to_none(v)
 
 
-class TaskUpdateAPI(BaseModel):
-    name: str | None = Field(
-        None, max_length=46, description="Название задачи, обязательное поле"
-    )
-    description: str | None = Field(
-        None,
-        max_length=1000,
-        description="Подробное описание задачи (необязательное поле)",
-    )
-    theme_id: UUID | None = None
+class TaskUpdateAPI(TaskUpdateBase):
     priority: str | UUID | None = None
-    completed_at: datetime | None = None
-
-    @field_validator("theme_id", mode="before")
-    @classmethod
-    def validate_hex_color(cls, v: object) -> object:
-        return TaskCreateAPI.empty_str_to_none(v)
 
 
 class TaskInDB(TaskBase, InDBBase):

@@ -30,8 +30,8 @@ class ZenquoteAPI(BaseModel):
 
 class QuoteCreate(BaseModel):
     batch_id: UUID
-    text: str
-    author: str
+    text: str = Field(max_length=256)
+    author: str = Field(max_length=128)
 
 
 class QuoteInDB(QuoteCreate, InDBBase):
@@ -39,8 +39,8 @@ class QuoteInDB(QuoteCreate, InDBBase):
 
 
 class QuoteUpdate(BaseModel):
-    text: str | None = None
-    author: str | None = None
+    text: str | None = Field(default=None, max_length=256)
+    author: str | None = Field(default=None, max_length=128)
 
 
 class QuoteAnswer(BaseModel):

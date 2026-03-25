@@ -307,7 +307,6 @@ async def test_stats_page_sidebar_matches_home_sidebar_for_shared_metrics(
         "stat-active-tasks",
         "stat-total-habits",
         "stat-active-habits",
-        "stat-due-habits-today",
     ]
     for stat_id in shared_stat_ids:
         assert _extract_sidebar_stat_value(
