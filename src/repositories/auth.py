@@ -11,7 +11,7 @@ from src.exceptions import (
 )
 from src.schemas.auth import (
     AuthUser,
-    AuthUserWithPassword,
+    AuthUserWithPasswordField,
     OAuthAccountRead,
     UserCreate,
     UserUpdate,
@@ -37,14 +37,14 @@ class AuthRepository(
     def _convert_oauth_model_to_read(record: OAuthAccount) -> OAuthAccountRead:
         return OAuthAccountRead.model_validate(record, from_attributes=True)
 
-    async def get_user_by_email(self, email: str) -> AuthUserWithPassword | None:
+    async def get_user_by_email(self, email: str) -> AuthUserWithPasswordField | None:
         normalized = self._normalize_email(email)
         stmt = select(User).where(func.lower(User.email) == normalized)
         result = await self._session.execute(stmt)
         user = result.scalars().first()
         if not user:
             return None
-        return AuthUserWithPassword.model_validate(user)
+        return AuthUserWithPasswordField.model_validate(user)
 
     async def create_user(self, email: str, password_hash: str | None) -> AuthUser:
         return await self.add(

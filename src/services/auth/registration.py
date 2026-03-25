@@ -64,7 +64,7 @@ class RegistrationService(AuthBaseService):
 
     async def set_password(self, user_id: UUID, password: str) -> AuthUser | None:
         """Обновить пароль пользователя."""
-        validated_password = AuthRegister.validate_password(password)
+        validated_password = AuthRegister.validate_password_length(password)
         return await self.auth_repo.set_user_password(
             user_id, self.hash_password(validated_password)
         )
