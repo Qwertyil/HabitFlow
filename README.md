@@ -191,15 +191,7 @@ APScheduler
 git clone https://github.com/Qwertyil/HabitFlow.git
 cd HabitFlow
 cp .env.example .env
-```
-
-Create `.env.docker`:
-
-```env
-POSTGRES_HOST=postgres
-POSTGRES_PORT=5432
-REDIS_HOST=redis
-REDIS_PORT=6379
+cp .env.docker.example .env.docker
 ```
 
 Then run:
@@ -209,11 +201,17 @@ make compose-up
 make migration
 ```
 
-Application URL: `http://localhost:8000`
+Application URL: `http://localhost:8001`
 PostgreSQL: `localhost:5430`
 Redis: `localhost:6370`
 
 ### Option 2. Local Development
+
+Create `.env` from the example file:
+
+```bash
+cp .env.example .env
+```
 
 Install dependencies:
 
@@ -285,7 +283,7 @@ The default `make test` command runs pytest with coverage and enforces a minimum
 
 ## Main Environment Variables
 
-| Variable | Purpose | Default |
+| Variable | Purpose | Example value |
 |---|---|---|
 | `POSTGRES_DB` | PostgreSQL database name | `mydatabase` |
 | `POSTGRES_USER` | PostgreSQL user | `myuser` |
@@ -296,19 +294,21 @@ The default `make test` command runs pytest with coverage and enforces a minimum
 | `REDIS_PORT` | Redis host port | `6370` |
 | `REDIS_PASSWORD` | Redis password | `your_redis_password_here` |
 | `REDIS_DB` | Redis DB index | `0` |
-| `CONTAINER_APP_PORT` | Docker app port | `8000` |
+| `CONTAINER_APP_PORT` | internal app port inside Docker container | `8000` |
 | `APP_PORT` | local app port | `8001` |
 | `UI_SESSION_SECRET_KEY` | UI session middleware secret | `change_me_to_a_long_random_string` |
 | `AUTH_SESSION_COOKIE_NAME` | auth cookie name | `auth_session` |
 | `GOOGLE_OAUTH_CLIENT_ID` | Google OAuth client id | empty |
 | `GOOGLE_OAUTH_CLIENT_SECRET` | Google OAuth client secret | empty |
-| `GOOGLE_OAUTH_REDIRECT_URI` | Google OAuth callback URL | `http://localhost:8000/auth/google/callback` |
+| `GOOGLE_OAUTH_REDIRECT_URI` | Google OAuth callback URL | `http://localhost:8001/auth/google/callback` |
 | `ZENQUOTES_API_URL` | quotes provider URL | `https://zenquotes.io/api/quotes` |
-| `REFILL_INTERVAL_HOURS` | quote refresh interval for APScheduler | required |
+| `REFILL_INTERVAL_HOURS` | quote refresh interval for APScheduler | `1` |
 | `DEBUG` | debug mode | `True` |
 
 Notes:
 
+- the table reflects the values shipped in `.env.example`; some settings are still required by code if you remove them from the file;
+- `.env.docker` overrides `POSTGRES_HOST`, `POSTGRES_PORT`, `REDIS_HOST`, and `REDIS_PORT` for the app container;
 - if `DEBUG=False`, `UI_SESSION_SECRET_KEY` must be set explicitly;
 - Google OAuth is disabled unless all required `GOOGLE_OAUTH_*` variables are provided;
 - quote refresh scheduling uses `REFILL_INTERVAL_HOURS` from config;
@@ -400,13 +400,13 @@ Screenshots are captured with demo data (themes, tasks, habits, partial task com
 
 ## Documentation
 
-- `docs/README.md` for documentation map and file roles
-- `docs/overview.mdc` for project context and architecture principles
-- `docs/contracts/theme-system.md` for the theme-token SSOT and runtime theme-switch contract
-- `docs/project/overview.md` for the live HabitFlow lab task dashboard
-- `docs/project/startup.md` for new-session handoff and current workspace state
-- `docs/contracts/api_contract.mdc` for current HTTP contracts
-- `docs/contracts/session_contract.mdc` for auth and session behavior
+Internal docs live under `docs/`:
+
+- [`docs/overview.mdc`](docs/overview.mdc) — product scope, architecture principles, and how documentation is organized
+- [`docs/api_contract.mdc`](docs/api_contract.mdc) — HTTP contract for registered routes (methods, paths, payloads, status codes, auth/CSRF)
+- [`docs/session_contract.mdc`](docs/session_contract.mdc) — UI session middleware vs Redis-backed auth sessions, cookies, and OAuth state
+
+Start with `overview.mdc`, then open the contract that matches the change you are making.
 
 ## Next Steps
 

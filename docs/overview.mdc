@@ -22,17 +22,18 @@ HabitFlow — web-first FastAPI-приложение для личного уп�
 Основной интерфейс проекта — серверно-рендеренные страницы (`HTML + Jinja2 + vanilla JS`) с точечными JSON-эндпоинтами для обновлений из браузера. Отдельный публичный JSON API под `/api/*` сейчас не реализован.
 
 ## 3. Текущий продуктовый скоуп
-На 20 марта 2026 в проекте реализовано:
+На 25 марта 2026 в проекте реализовано:
 - CRUD для `themes`, `tasks`, `habits`;
 - owner-scoped доступ к пользовательским данным;
 - статистическая страница `/stats` по задачам, привычкам и темам;
-- light/dark theme switching in the shared navbar with semantic CSS tokens;
-- sticky top shell and partial fetch-based page updates for list/filter/sort navigation where the current UI supports it;
+- переключение light/dark темы в общем navbar через semantic CSS tokens;
+- sticky top shell и частичные fetch-based обновления страницы для навигации по спискам, фильтрам и сортировке там, где это поддерживает текущий UI;
 - регистрация, логин, logout и Redis-backed auth-сессии;
 - опциональный вход через Google OAuth;
 - CSRF-защита для state-changing web-запросов;
 - rate limiting для auth-роутов;
 - фоновое обновление цитат через APScheduler и ZenQuotes;
+- health/readiness эндпоинты и централизованные security headers на уровне приложения;
 - тесты уровней `unit`, `api_unit`, `integration`;
 - миграции Alembic и запуск через Docker / Docker Compose.
 
@@ -55,6 +56,7 @@ HabitFlow — web-first FastAPI-приложение для личного уп�
 - FastAPI;
 - SQLAlchemy 2.x async + PostgreSQL;
 - Redis для auth session storage;
+- APScheduler + `httpx` для фонового обновления цитат;
 - `SessionMiddleware` для UI session;
 - Jinja2 и vanilla JS;
 - pytest, Ruff, mypy.
@@ -69,35 +71,24 @@ HabitFlow — web-first FastAPI-приложение для личного уп�
 ## 6. Источники истины и роли документов
 Документация в репозитории разделена по ролям:
 
-- Контрактные документы в `docs/contracts/`:
+- Контрактные документы в корне `docs/`:
   - `overview.mdc` — продуктовые границы, архитектура, правила документации;
-  - `contracts/api_contract.mdc` — фактический HTTP-контракт зарегистрированных роутов;
-  - `contracts/session_contract.mdc` — устройство UI session и auth session;
-  - `contracts/theme-system.md` — SSOT по визуальным темам и design tokens.
-- Операционные документы:
-  - `docs/README.md` — карта дерева документации;
-  - `docs/project/startup.md` — стартовый handoff для новой сессии;
-  - `docs/project/overview.md` — единственный task-dashboard и источник статусов;
-  - `docs/project/progress.md` — append-only журнал прогресса;
-  - `docs/operations/codex_workflow.md` — процесс работы ассистента.
-- Материалы-доказательства и референсы:
-  - `docs/screenshots/` — baseline screenshots и визуальные артефакты проверки;
-  - `docs/artifacts/` и `docs/prompts/cursor-prompt.md` — локальные дизайн-артефакты и reverse prompt для текущей implementation wave;
-  - `docs/prompts/` — handoff-промпты для Artifacts/Cursor;
-  - `docs/reviews/` — обзорные аудиты и review snapshots.
+  - `api_contract.mdc` — фактический HTTP-контракт зарегистрированных роутов;
+  - `session_contract.mdc` — устройство UI session и auth session.
+- Внешние по отношению к `docs/`, но релевантные источники:
+  - `README.md` — запуск, эксплуатация и входная точка в документацию;
+  - `tests/` — исполняемая спецификация поведения;
+  - `git` — журнал изменений.
 
-Соседние источники:
-- `README.md` — запуск, эксплуатация, high-level описание проекта;
-- `tests/` — исполняемая спецификация поведения;
-- `git` — журнал изменений.
+На текущий момент дерево внутренней документации в репозитории намеренно компактное: канонические документы — это три файла в `docs/`, а `README.md` дублирует только входную навигацию по ним.
 
 ## 7. Правила обновления документации
 - Меняется продуктовый скоуп, архитектурные приоритеты или список канонических документов — обновляется `overview.mdc`.
-- Меняются маршруты, payload'ы, редиректы, коды ответов, CSRF/auth-правила на HTTP-уровне — обновляется `docs/contracts/api_contract.mdc` и релевантные тесты.
-- Меняются cookies, TTL, Redis payload, session lifecycle или OAuth-state flow — обновляется `docs/contracts/session_contract.mdc` и релевантные тесты.
-- Меняются визуальные темы, design tokens или client-side theme switching — обновляется `docs/contracts/theme-system.md`.
+- Меняются маршруты, payload'ы, редиректы, коды ответов, CSRF/auth-правила на HTTP-уровне — обновляется `api_contract.mdc` и релевантные тесты.
+- Меняются cookies, TTL, Redis payload, session lifecycle или OAuth-state flow — обновляется `session_contract.mdc` и релевантные тесты.
+- Меняются визуальные темы, app shell или client-side navigation/theme switching — обновляется `overview.mdc`, а при необходимости и `README.md`.
 - Меняется запуск, окружение или эксплуатационные шаги — обновляется `README.md`.
-- Меняется роль документов, порядок чтения или handoff-навигация — обновляются `docs/README.md`, `CODEX.md`, `AGENTS.md`, `docs/project/startup.md`, `docs/operations/codex_workflow.md`.
+- Меняется роль документов или порядок входа в документацию — обновляются `overview.mdc` и секция `Documentation` в `README.md`.
 
 ## 8. Definition of Done
 Изменение считается завершённым, когда:
