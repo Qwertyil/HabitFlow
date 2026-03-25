@@ -41,7 +41,7 @@ class ThemeCreate(ThemeBase):
 
 class ThemeUpdate(BaseModel):
     name: str | None = Field(
-        None, max_length=24, description="Название темы (максимум 100 символов)"
+        None, max_length=24, description="Название темы (максимум 24 символов)"
     )
     color: str | None = Field(
         None,
