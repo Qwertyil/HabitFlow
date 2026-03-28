@@ -185,6 +185,7 @@ class DummyThemeRepo:
         self.by_id_map: dict[UUID, object] = {}
         self.by_name = None
         self.get_by_id_calls = 0
+        self.list_by_ids_calls = 0
 
     async def get_by_id(self, theme_id: UUID) -> object | None:
         self.get_by_id_calls += 1
@@ -194,6 +195,15 @@ class DummyThemeRepo:
 
     async def get_by_name(self, theme_name: str) -> object | None:
         return self.by_name
+
+    async def list_by_ids(self, theme_ids: list[UUID]) -> dict[UUID, object]:
+        self.list_by_ids_calls += 1
+        result: dict[UUID, object] = {}
+        for theme_id in set(theme_ids):
+            theme = self.by_id_map.get(theme_id, self.by_id)
+            if theme is not None:
+                result[theme_id] = theme
+        return result
 
 
 @pytest.mark.asyncio
@@ -334,7 +344,42 @@ async def test_list_habits_populates_theme_name_and_color() -> None:
     assert len(items) == 1
     assert items[0].theme_name == "Work"
     assert items[0].theme_color == "#A1B2C3"
-    assert theme_repo.get_by_id_calls == 1
+    assert theme_repo.list_by_ids_calls == 1
+    assert theme_repo.get_by_id_calls == 0
+    assert habit_repo.list_completion_dates_by_habit_calls == 1
+    assert habit_repo.list_completion_dates_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_list_habits_uses_bulk_loading_for_related_data(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    today = date(2026, 1, 2)
+    theme_id = uuid4()
+    first = _mk_habit(habit_id=uuid4(), theme_id=theme_id)
+    second = _mk_habit(habit_id=uuid4(), theme_id=theme_id)
+
+    habit_repo = DummyHabitRepo()
+    habit_repo.list_habits_result = ([first, second], 2)
+    habit_repo.completions[first.id] = {today}
+
+    theme_repo = DummyThemeRepo()
+    theme_repo.by_id_map = {
+        theme_id: _ThemeObj(theme_id, name="Work", color="#A1B2C3")
+    }
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    monkeypatch.setattr(service, "_today_utc", lambda: today)
+
+    items, total = await service.list_habits(status="active")
+
+    assert total == 2
+    assert len(items) == 2
+    assert items[0].completed_today is True
+    assert items[1].completed_today is False
+    assert theme_repo.list_by_ids_calls == 1
+    assert theme_repo.get_by_id_calls == 0
+    assert habit_repo.list_completion_dates_by_habit_calls == 1
+    assert habit_repo.list_completion_dates_calls == 0
 
 
 @pytest.mark.asyncio
@@ -1280,28 +1325,6 @@ def test_progress_and_occurrence_helpers_cover_extra_schedule_types() -> None:
 
 
 @pytest.mark.asyncio
-async def test_theme_label_datetime_and_reference_helpers_cover_fallbacks(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    missing_theme_habit = _mk_habit(theme_id=uuid4())
-    habit_repo = DummyHabitRepo()
-    theme_repo = DummyThemeRepo()
-    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
-    monkeypatch.setattr(service, "_today_utc", lambda: date(2026, 1, 5))
-
-    assert await service._get_habit_theme_label(
-        _mk_habit(),
-        theme_cache={},
-    ) == "Без темы"
-    assert await service._get_habit_theme_label(
-        missing_theme_habit,
-        theme_cache={},
-    ) == "Без темы"
-    assert service._to_utc_datetime(datetime(2026, 1, 5, 12, 0, 0)).tzinfo is UTC
-    assert service._resolve_reference_date(None) == date(2026, 1, 5)
-
-
-@pytest.mark.asyncio
 async def test_complete_and_incomplete_habit_raise_missing_archived_and_future_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1410,7 +1433,7 @@ def test_validation_helpers_raise_for_invalid_schedule_values() -> None:
     with pytest.raises(ValueError, match="days must be list"):
         service._weekday_indexes("mon")
 
-    with pytest.raises(ValueError, match="days must contain only mon..sun"):
+    with pytest.raises(ValueError, match=r"days must contain only mon..sun"):
         service._weekday_indexes(["bad"])
 
     with pytest.raises(ValueError, match="day must be integer"):

@@ -42,6 +42,16 @@ class ThemeRepository(
         themes = await self.list(skip=skip, limit=limit)
         return {theme.color for theme in themes}
 
+    async def list_by_ids(self, theme_ids: list[UUID]) -> dict[UUID, ThemeInDB]:
+        if not theme_ids:
+            return {}
+
+        themes = await self.list(
+            limit=None,
+            extra_conditions=[Theme.id.in_(set(theme_ids))],
+        )
+        return {theme.id: theme for theme in themes}
+
     async def list_with_counts(
         self, skip: int = 0, limit: int = 100
     ) -> list[tuple[ThemeInDB, int, int]]:

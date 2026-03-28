@@ -222,12 +222,20 @@ class HabitService:
                 order=order,
             )
 
-        theme_cache: dict[UUID, ThemeInDB | None] = {}
+        completion_dates_by_habit = await self._get_completion_dates_by_habit(habits)
+        themes_by_id = await self._get_themes_by_habit(habits)
 
         items: list[HabitResponse] = []
         for habit in habits:
-            item, _ = await self._build_habit_response(
-                habit, today=today, theme_cache=theme_cache
+            item = await self._build_habit_response(
+                habit,
+                today=today,
+                completion_dates=completion_dates_by_habit[habit.id],
+                theme=(
+                    themes_by_id.get(habit.theme_id)
+                    if habit.theme_id is not None
+                    else None
+                ),
             )
             if due_today_only and not item.due_today:
                 continue
@@ -288,13 +296,9 @@ class HabitService:
         habit: HabitInDB,
         *,
         today: date,
-        theme_cache: dict[UUID, ThemeInDB | None],
-    ) -> tuple[HabitResponse, set[date]]:
-        theme = None
-        if habit.theme_id:
-            theme = await self._get_theme_cached(theme_cache, habit.theme_id)
-
-        completion_dates = await self.habit_repo.list_completion_dates(habit.id)
+        completion_dates: set[date],
+        theme: ThemeInDB | None = None,
+    ) -> HabitResponse:
         completed_today = today in completion_dates
         item = HabitResponse(
             id=habit.id,
@@ -324,7 +328,7 @@ class HabitService:
                 habit, completion_dates, today
             ),
         )
-        return item, completion_dates
+        return item
 
     def _is_habit_due_today(
         self,
@@ -459,7 +463,7 @@ class HabitService:
         active_habits = [habit for habit in habits if not habit.is_archived]
 
         completion_dates_by_habit = await self._get_completion_dates_by_habit(habits)
-        theme_cache: dict[UUID, ThemeInDB | None] = {}
+        themes_by_id = await self._get_themes_by_habit(active_habits)
         all_time_start = self._all_time_period_start(
             habits, completion_dates_by_habit, today
         )
@@ -475,7 +479,7 @@ class HabitService:
             active_habits=active_habits,
             completion_dates_by_habit=completion_dates_by_habit,
             today=today,
-            theme_cache=theme_cache,
+            themes_by_id=themes_by_id,
         )
         completions_by_period = self._build_completion_breakdown(trend_buckets)
 
@@ -608,7 +612,7 @@ class HabitService:
         active_habits: list[HabitInDB],
         completion_dates_by_habit: dict[UUID, set[date]],
         today: date,
-        theme_cache: dict[UUID, ThemeInDB | None],
+        themes_by_id: dict[UUID, ThemeInDB],
     ) -> _PageStatisticsTotals:
         totals = _PageStatisticsTotals(
             due_today=0,
@@ -649,9 +653,8 @@ class HabitService:
                     )
                 )
 
-            theme_label = await self._get_habit_theme_label(
-                habit, theme_cache=theme_cache
-            )
+            theme = themes_by_id.get(habit.theme_id) if habit.theme_id else None
+            theme_label = theme.name if theme is not None else NO_THEME_LABEL
             totals.top_theme_counts[theme_label] = (
                 totals.top_theme_counts.get(theme_label, 0) + 1
             )
@@ -701,6 +704,15 @@ class HabitService:
             habit.id: set(completion_dates_by_habit.get(habit.id, set()))
             for habit in habits
         }
+
+    async def _get_themes_by_habit(
+        self, habits: list[HabitInDB]
+    ) -> dict[UUID, ThemeInDB]:
+        theme_ids = [habit.theme_id for habit in habits if habit.theme_id is not None]
+        if not theme_ids:
+            return {}
+
+        return await self.theme_repo.list_by_ids(theme_ids)
 
     def _calculate_progress_percent(
         self, habit: HabitInDB, completion_dates: set[date], today: date
@@ -894,18 +906,6 @@ class HabitService:
 
         return self._calculate_success_rate(completed_occurrences, due_occurrences)
 
-    async def _get_habit_theme_label(
-        self,
-        habit: HabitInDB,
-        *,
-        theme_cache: dict[UUID, ThemeInDB | None],
-    ) -> str:
-        if habit.theme_id is None:
-            return NO_THEME_LABEL
-
-        theme = await self._get_theme_cached(theme_cache, habit.theme_id)
-        return theme.name if theme is not None else NO_THEME_LABEL
-
     def _to_utc_datetime(self, value: datetime) -> datetime:
         if value.tzinfo is None:
             return value.replace(tzinfo=UTC)
@@ -915,13 +915,6 @@ class HabitService:
         if reference_time is None:
             return self._today_utc()
         return self._to_utc_datetime(reference_time).date()
-
-    async def _get_theme_cached(
-        self, theme_cache: dict[UUID, ThemeInDB | None], theme_id: UUID
-    ) -> ThemeInDB | None:
-        if theme_id not in theme_cache:
-            theme_cache[theme_id] = await self.theme_repo.get_by_id(theme_id)
-        return theme_cache[theme_id]
 
     async def complete_habit(
         self, habit_id: UUID, completed_on: date | None = None
