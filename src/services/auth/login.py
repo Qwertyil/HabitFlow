@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 
 import httpx
 
-from src.config import settings
+from src.config import Settings
 from src.repositories import AuthRepository
 from src.repositories.session_store import RedisSessionStore
 from src.schemas.auth import AuthLogin, AuthUser
@@ -28,18 +28,15 @@ class LoginService(AuthBaseService):
         google_oauth_client_factory: Callable[[], GoogleOauth] | None = None,
         state_token_provider: Callable[[], str] | None = None,
         now_provider: Callable[[], datetime] | None = None,
+        auth_settings: Settings | None = None,
     ):
         """Инициализировать Login сервис."""
-        if session_ttl_seconds is None:
-            session_ttl_seconds = settings.AUTH_SESSION_MAX_AGE
-        if google_oauth_state_ttl_seconds is None:
-            google_oauth_state_ttl_seconds = settings.GOOGLE_OAUTH_STATE_TTL
-
         super().__init__(
             auth_repo=auth_repo,
             session_store=session_store,
             session_ttl_seconds=session_ttl_seconds,
             google_oauth_state_ttl_seconds=google_oauth_state_ttl_seconds,
+            auth_settings=auth_settings,
             http_client=http_client,
             google_oauth_client_factory=google_oauth_client_factory,
             state_token_provider=state_token_provider,

@@ -9,7 +9,7 @@ from uuid import UUID
 import httpx
 from argon2 import PasswordHasher
 
-from src.config import settings
+from src.config import Settings
 from src.repositories import AuthRepository
 from src.repositories.session_store import RedisSessionStore
 from src.schemas.auth import AuthUser
@@ -36,18 +36,36 @@ class AuthBaseService:
         self,
         auth_repo: AuthRepository,
         session_store: RedisSessionStore | None = None,
-        session_ttl_seconds: int = settings.AUTH_SESSION_MAX_AGE,
-        google_oauth_state_ttl_seconds: int = settings.GOOGLE_OAUTH_STATE_TTL,
+        session_ttl_seconds: int | None = None,
+        google_oauth_state_ttl_seconds: int | None = None,
+        auth_settings: Settings | None = None,
         http_client: httpx.AsyncClient | None = None,
         google_oauth_client_factory: Callable[[], GoogleOauth] | None = None,
         state_token_provider: Callable[[], str] | None = None,
         now_provider: Callable[[], datetime] | None = None,
     ):
         """Инициализировать базовый сервис авторизации."""
+        if auth_settings is None:
+            from src.config import settings as runtime_settings
+
+            auth_settings = runtime_settings
+
+        resolved_session_ttl = (
+            session_ttl_seconds
+            if session_ttl_seconds is not None
+            else auth_settings.AUTH_SESSION_MAX_AGE
+        )
+        resolved_oauth_state_ttl = (
+            google_oauth_state_ttl_seconds
+            if google_oauth_state_ttl_seconds is not None
+            else auth_settings.GOOGLE_OAUTH_STATE_TTL
+        )
+
+        self._auth_settings = auth_settings
         self.auth_repo = auth_repo
         self._session_store = session_store
-        self._session_ttl_seconds = session_ttl_seconds
-        self._google_oauth_state_ttl_seconds = google_oauth_state_ttl_seconds
+        self._session_ttl_seconds = resolved_session_ttl
+        self._google_oauth_state_ttl_seconds = resolved_oauth_state_ttl
         self._http_client = http_client
         self._google_oauth_client_factory = google_oauth_client_factory
         self._state_token_provider = state_token_provider or (
@@ -104,14 +122,14 @@ class AuthBaseService:
         if self._google_oauth_client_factory is not None:
             return self._google_oauth_client_factory()
 
-        if not settings.google_oauth_enabled:
+        if not self._auth_settings.google_oauth_enabled:
             from src.exceptions import OAuthConfigurationError
 
             raise OAuthConfigurationError("Google OAuth is not configured")
         return GoogleOauth(
-            client_id=str(settings.GOOGLE_OAUTH_CLIENT_ID),
-            client_secret=str(settings.GOOGLE_OAUTH_CLIENT_SECRET),
-            redirect_uri=str(settings.GOOGLE_OAUTH_REDIRECT_URI),
+            client_id=str(self._auth_settings.GOOGLE_OAUTH_CLIENT_ID),
+            client_secret=str(self._auth_settings.GOOGLE_OAUTH_CLIENT_SECRET),
+            redirect_uri=str(self._auth_settings.GOOGLE_OAUTH_REDIRECT_URI),
             http_client=self._http_client,
         )
 

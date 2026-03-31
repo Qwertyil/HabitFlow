@@ -2,16 +2,19 @@ from collections.abc import AsyncGenerator
 from uuid import uuid4
 
 import pytest
-from fastapi import Depends, FastAPI
-from httpx import ASGITransport, AsyncClient
+from fastapi import Depends, FastAPI, Request
+from httpx import AsyncClient
 from redis.asyncio import Redis
 
+import src.config as app_config
 from src.config import settings
 from src.database.connection import get_db
-from src.dependencies import get_redis_adapter, require_auth
+from src.dependencies import require_auth
+from src.redis import RedisAdapter
 from src.repositories import AuthRepository, RedisSessionStore
 from src.schemas.auth import AuthLogin, AuthRegister, AuthUser
 from src.services.auth import LoginService, RegistrationService
+from tests.helpers import async_test_client
 
 pytestmark = pytest.mark.asyncio
 
@@ -19,8 +22,10 @@ pytestmark = pytest.mark.asyncio
 @pytest.fixture
 async def protected_client(session_factory_async) -> AsyncGenerator[AsyncClient, None]:
     app = FastAPI()
+    app.state.settings = app_config.settings
+    app.state.redis_adapter = RedisAdapter(app_config.settings)
 
-    async def override_get_db():
+    async def override_get_db(request: Request):
         async with session_factory_async() as session:
             try:
                 yield session
@@ -37,9 +42,8 @@ async def protected_client(session_factory_async) -> AsyncGenerator[AsyncClient,
     ) -> dict[str, str]:
         return {"user_id": str(current_user.id)}
 
-    transport = ASGITransport(app=app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with async_test_client(app) as client:
             yield client
     finally:
         app.dependency_overrides.clear()
@@ -54,9 +58,6 @@ async def redis_db_cleanup(redis_container) -> AsyncGenerator[None, None]:
     finally:
         await redis_client.flushdb()
         await redis_client.aclose()
-        cached_adapter = get_redis_adapter()
-        await cached_adapter.close()
-        get_redis_adapter.cache_clear()
 
 
 async def test_auth_full_flow_login_resolve_logout_then_unauthorized(
@@ -65,7 +66,11 @@ async def test_auth_full_flow_login_resolve_logout_then_unauthorized(
     redis_db_cleanup,
 ) -> None:
     auth_repo = AuthRepository(session=session)
-    session_store = RedisSessionStore(redis_adapter=get_redis_adapter())
+    redis_adapter = RedisAdapter(settings)
+    session_store = RedisSessionStore(
+        redis_adapter=redis_adapter,
+        session_ttl_seconds=settings.AUTH_SESSION_MAX_AGE,
+    )
     registration_service = RegistrationService(auth_repo=auth_repo, session_store=session_store)
     login_service = LoginService(auth_repo=auth_repo, session_store=session_store)
 

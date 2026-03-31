@@ -2,8 +2,6 @@ import logging
 
 from fastapi import FastAPI
 
-from src.config import settings
-from src.database.connection import AsyncSessionLocal
 from src.repositories.quote_batches import QuoteBatchRepository
 from src.repositories.quotes import QuoteRepository
 from src.services.quotes import QuoteService
@@ -13,15 +11,19 @@ logger = logging.getLogger(__name__)
 
 
 async def refresh_quotes_job(app: FastAPI) -> None:
-    if getattr(settings, "TESTING", False):
+    if app.state.settings.TESTING:
         logger.debug("Skipping quotes refresh while running tests")
         return
 
     try:
-        async with AsyncSessionLocal() as session:
+        session_maker = app.state.async_session_maker
+        async with session_maker() as session:
             batch_repository = QuoteBatchRepository(session)
             quote_repository = QuoteRepository(session)
-            zenquotes_service = ZenQuotesService(app.state.http_client)
+            zenquotes_service = ZenQuotesService(
+                app.state.http_client,
+                api_url=app.state.settings.ZENQUOTES_API_URL,
+            )
 
             quote_service = QuoteService(
                 batch_repository=batch_repository,

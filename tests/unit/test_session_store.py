@@ -5,7 +5,6 @@ from uuid import uuid4
 
 import pytest
 
-from src.config import settings
 from src.repositories.session_store import RedisSessionStore
 
 
@@ -137,16 +136,13 @@ def test_init_rejects_non_positive_ttl(ttl: int) -> None:
         RedisSessionStore(redis_adapter=redis, session_ttl_seconds=ttl)
 
 
-def test_init_rejects_non_positive_ttl_from_settings(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_init_rejects_non_positive_ttl_explicit_zero() -> None:
     redis = _FakeRedisAdapter()
-    monkeypatch.setattr(settings, "AUTH_SESSION_MAX_AGE", 0)
 
     with pytest.raises(
         ValueError, match="session_ttl_seconds must be greater than zero"
     ):
-        RedisSessionStore(redis_adapter=redis)
+        RedisSessionStore(redis_adapter=redis, session_ttl_seconds=0)
 
 
 @pytest.mark.asyncio

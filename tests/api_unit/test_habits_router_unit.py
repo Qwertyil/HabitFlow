@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 
 import pytest
 from fastapi import Request
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 
 from src.csrf import require_csrf
 from src.dependencies import (
@@ -25,7 +25,7 @@ from tests.api_unit.assertions import (
     assert_json_response,
     assert_redirect,
 )
-from tests.helpers import make_auth_user, with_csrf_form
+from tests.helpers import async_test_client, make_auth_user, with_csrf_form
 from src.utils import PUBLIC_ERRORS
 
 pytestmark = pytest.mark.asyncio
@@ -124,9 +124,8 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
     )
     app.dependency_overrides[require_csrf] = lambda: None
     _override_habit_service(_FakeHabitService())
-    transport = ASGITransport(app=app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as c:
+        async with async_test_client(app) as c:
             yield c
     finally:
         app.dependency_overrides.clear()

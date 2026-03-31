@@ -4,7 +4,7 @@ from collections.abc import AsyncGenerator
 
 import pytest
 from fastapi import Request
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 
 from src.dependencies import get_statistics_service
 from src.main import app
@@ -20,6 +20,7 @@ from src.schemas.statistics import (
 )
 from src.utils import ensure_csrf_token
 from tests.api_unit.assertions import assert_html_response
+from tests.helpers import async_test_client
 
 pytestmark = pytest.mark.asyncio
 
@@ -152,9 +153,8 @@ async def stats_client() -> AsyncGenerator[tuple[AsyncClient, dict[str, object]]
         lambda: fake_statistics_service
     )
     captured["statistics_service"] = fake_statistics_service
-    transport = ASGITransport(app=app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with async_test_client(app) as client:
             yield client, captured
     finally:
         app.dependency_overrides.clear()

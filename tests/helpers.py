@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import re
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
+from starlette.applications import Starlette
 
 from src.schemas.auth import AuthUser
 
@@ -57,3 +60,18 @@ async def with_csrf_headers(
     request_headers = dict(headers or {})
     request_headers["X-CSRFToken"] = await fetch_csrf_token(client, path)
     return request_headers
+
+
+@asynccontextmanager
+async def async_test_client(
+    app: Starlette,
+    *,
+    base_url: str = "http://test",
+) -> AsyncGenerator[AsyncClient, None]:
+    """
+    httpx.ASGITransport не выполняет lifespan — без этого app.state (db/redis) пустой.
+    """
+    async with app.router.lifespan_context(app):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url=base_url) as client:
+            yield client

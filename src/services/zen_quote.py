@@ -4,7 +4,6 @@ import httpx
 from annotated_types import MaxLen
 from pydantic import BaseModel, ValidationError
 
-from src.config import settings
 from src.schemas import QuoteCreate, ZenquoteAPI
 
 logger = logging.getLogger(__name__)
@@ -23,13 +22,14 @@ max_author_len = get_max_length(QuoteCreate, "author")
 
 
 class ZenQuotesService:
-    def __init__(self, http_client: httpx.AsyncClient):
+    def __init__(self, http_client: httpx.AsyncClient, *, api_url: str):
         self._http_client = http_client
+        self._api_url = api_url
 
     async def fetch_batch(self) -> list[ZenquoteAPI]:
         try:
             response = await self._http_client.get(
-                settings.ZENQUOTES_API_URL,
+                self._api_url,
                 timeout=10.0,
             )
             response.raise_for_status()

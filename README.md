@@ -410,8 +410,8 @@ Start with `overview.mdc`, then open the contract that matches the change you ar
 
 ## Next Steps
 
-1. Perform UI and e2e testing.
-2. Refactor `main.py` and `utils.py`.
+1. Refactor `utils.py`.
+2. Perform UI and e2e testing.
 3. Add language switching.
 4. Add quote translation based on the selected language.
 

@@ -10,7 +10,7 @@ from fastapi_limiter.depends import RateLimiter
 from pydantic import ValidationError
 from pyrate_limiter import Duration, Limiter, Rate  # type: ignore[attr-defined]
 
-from src.config import settings
+from src.config import Settings
 from src.csrf import csrf_error_message, read_request_payload, validate_csrf
 from src.dependencies import (
     get_current_user,
@@ -263,7 +263,7 @@ def _render_auth_template(
             "next_url": next_url,
             "error_message": error_message,
             "form_data": form_data or {},
-            "google_oauth_enabled": settings.google_oauth_enabled,
+            "google_oauth_enabled": request.app.state.settings.google_oauth_enabled,
             "hide_sidebar": True,
             "csrf_token": ensure_csrf_token(request),
         }
@@ -430,23 +430,23 @@ def _build_google_oauth_callback_error_response(
     raise exc
 
 
-def _set_auth_cookie(response: Response, session_id: str) -> None:
+def _set_auth_cookie(response: Response, session_id: str, *, cfg: Settings) -> None:
     response.set_cookie(
-        key=settings.AUTH_SESSION_COOKIE_NAME,
+        key=cfg.AUTH_SESSION_COOKIE_NAME,
         value=session_id,
-        max_age=settings.AUTH_SESSION_MAX_AGE,
+        max_age=cfg.AUTH_SESSION_MAX_AGE,
         httponly=True,
-        samesite=settings.AUTH_SESSION_SAME_SITE,
-        secure=settings.AUTH_SESSION_HTTPS_ONLY,
+        samesite=cfg.AUTH_SESSION_SAME_SITE,
+        secure=cfg.AUTH_SESSION_HTTPS_ONLY,
     )
 
 
-def _clear_auth_cookie(response: Response) -> None:
+def _clear_auth_cookie(response: Response, *, cfg: Settings) -> None:
     response.delete_cookie(
-        key=settings.AUTH_SESSION_COOKIE_NAME,
+        key=cfg.AUTH_SESSION_COOKIE_NAME,
         httponly=True,
-        samesite=settings.AUTH_SESSION_SAME_SITE,
-        secure=settings.AUTH_SESSION_HTTPS_ONLY,
+        samesite=cfg.AUTH_SESSION_SAME_SITE,
+        secure=cfg.AUTH_SESSION_HTTPS_ONLY,
     )
 
 
@@ -505,7 +505,7 @@ async def google_callback(
         url=result.next_url,
         status_code=status.HTTP_303_SEE_OTHER,
     )
-    _set_auth_cookie(redirect, result.session_id)
+    _set_auth_cookie(redirect, result.session_id, cfg=request.app.state.settings)
     return redirect
 
 
@@ -617,9 +617,9 @@ async def register(
             url=_normalize_next(raw_payload.get("next")),
             status_code=status.HTTP_303_SEE_OTHER,
         )
-        _set_auth_cookie(redirect, session_id)
+        _set_auth_cookie(redirect, session_id, cfg=request.app.state.settings)
         return redirect
-    _set_auth_cookie(response, session_id)
+    _set_auth_cookie(response, session_id, cfg=request.app.state.settings)
     return user
 
 
@@ -693,9 +693,9 @@ async def login(
             url=_normalize_next(raw_payload.get("next")),
             status_code=status.HTTP_303_SEE_OTHER,
         )
-        _set_auth_cookie(redirect, session_id)
+        _set_auth_cookie(redirect, session_id, cfg=request.app.state.settings)
         return redirect
-    _set_auth_cookie(response, session_id)
+    _set_auth_cookie(response, session_id, cfg=request.app.state.settings)
     return user
 
 
@@ -720,7 +720,9 @@ async def logout(
                 status_code=exc.status_code,
             )
 
-    session_id = request.cookies.get(settings.AUTH_SESSION_COOKIE_NAME)
+    session_id = request.cookies.get(
+        request.app.state.settings.AUTH_SESSION_COOKIE_NAME
+    )
     if session_id and current_user is not None:
         await login_service.logout(session_id=session_id, user_id=current_user.id)
 
@@ -729,7 +731,7 @@ async def logout(
             url=_normalize_next(payload.get("next")),
             status_code=status.HTTP_303_SEE_OTHER,
         )
-        _clear_auth_cookie(redirect)
+        _clear_auth_cookie(redirect, cfg=request.app.state.settings)
         return redirect
-    _clear_auth_cookie(response)
+    _clear_auth_cookie(response, cfg=request.app.state.settings)
     return {"message": "Logged out"}

@@ -1,12 +1,10 @@
-from functools import lru_cache
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 from urllib.parse import quote
 
 import httpx
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.config import settings
 from src.database.connection import get_db
 from src.redis import RedisAdapter
 from src.repositories import (
@@ -51,9 +49,8 @@ def _login_redirect_target(request: Request) -> str:
     return f"{_AUTH_LOGIN_PATH}?next={quote(original_target, safe='')}"
 
 
-@lru_cache(maxsize=1)
-def get_redis_adapter() -> RedisAdapter:
-    return RedisAdapter()
+def get_redis_adapter(request: Request) -> RedisAdapter:
+    return cast(RedisAdapter, request.app.state.redis_adapter)
 
 
 async def get_auth_repository(
@@ -64,10 +61,14 @@ async def get_auth_repository(
 
 
 async def get_session_store(
+    request: Request,
     redis_adapter: RedisAdapter = Depends(get_redis_adapter),
 ) -> RedisSessionStore:
     """Провайдер для session-store (Redis)."""
-    return RedisSessionStore(redis_adapter=redis_adapter)
+    return RedisSessionStore(
+        redis_adapter=redis_adapter,
+        session_ttl_seconds=request.app.state.settings.AUTH_SESSION_MAX_AGE,
+    )
 
 
 async def get_http_client(request: Request) -> httpx.AsyncClient | None:
@@ -76,6 +77,7 @@ async def get_http_client(request: Request) -> httpx.AsyncClient | None:
 
 
 async def get_login_service(
+    request: Request,
     auth_repo: AuthRepository = Depends(get_auth_repository),
     session_store: RedisSessionStore = Depends(get_session_store),
     http_client: httpx.AsyncClient | None = Depends(get_http_client),
@@ -85,10 +87,12 @@ async def get_login_service(
         auth_repo=auth_repo,
         session_store=session_store,
         http_client=http_client,
+        auth_settings=request.app.state.settings,
     )
 
 
 async def get_registration_service(
+    request: Request,
     auth_repo: AuthRepository = Depends(get_auth_repository),
     session_store: RedisSessionStore = Depends(get_session_store),
     http_client: httpx.AsyncClient | None = Depends(get_http_client),
@@ -98,10 +102,12 @@ async def get_registration_service(
         auth_repo=auth_repo,
         session_store=session_store,
         http_client=http_client,
+        auth_settings=request.app.state.settings,
     )
 
 
 async def get_oauth_service(
+    request: Request,
     auth_repo: AuthRepository = Depends(get_auth_repository),
     session_store: RedisSessionStore = Depends(get_session_store),
     http_client: httpx.AsyncClient | None = Depends(get_http_client),
@@ -111,6 +117,7 @@ async def get_oauth_service(
         auth_repo=auth_repo,
         session_store=session_store,
         http_client=http_client,
+        auth_settings=request.app.state.settings,
     )
 
 
@@ -119,7 +126,9 @@ async def get_current_user(
     login_service: LoginService = Depends(get_login_service),
 ) -> AuthUser | None:
     """Достать пользователя по session-id из cookie через Redis и БД."""
-    session_id = request.cookies.get(settings.AUTH_SESSION_COOKIE_NAME)
+    session_id = request.cookies.get(
+        request.app.state.settings.AUTH_SESSION_COOKIE_NAME
+    )
     if not session_id:
         return None
 
@@ -317,9 +326,15 @@ def get_quote_batch_repository(
 
 
 def get_zenquotes_service(
-    http_client: httpx.AsyncClient = Depends(get_http_client),
+    request: Request,
+    http_client: httpx.AsyncClient | None = Depends(get_http_client),
 ) -> ZenQuotesService:
-    return ZenQuotesService(http_client)
+    if http_client is None:
+        raise RuntimeError("HTTP client is not available")
+    return ZenQuotesService(
+        http_client,
+        api_url=request.app.state.settings.ZENQUOTES_API_URL,
+    )
 
 
 def get_quote_service(

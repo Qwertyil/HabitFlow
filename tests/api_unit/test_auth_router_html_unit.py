@@ -6,9 +6,10 @@ from typing import Never
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
+import src.config as app_config
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 from starlette.middleware.sessions import SessionMiddleware
 
 from src.config import settings
@@ -34,7 +35,7 @@ from tests.api_unit.auth_router_shared import (  # noqa: F401
     _extract_google_oauth_href,
     configure_google_oauth,
 )
-from tests.helpers import extract_csrf_token, make_auth_user
+from tests.helpers import async_test_client, extract_csrf_token, make_auth_user
 
 pytestmark = pytest.mark.asyncio
 
@@ -76,8 +77,7 @@ async def test_is_html_request_detects_browser_requests(
     async def probe(request: Request) -> dict[str, bool]:
         return {"is_html": _is_html_request(request)}
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as http_client:
+    async with async_test_client(app) as http_client:
         res = await http_client.get("/probe", headers=headers)
 
     assert res.status_code == 200
@@ -90,6 +90,7 @@ async def client() -> AsyncGenerator[
     None,
 ]:
     app = FastAPI()
+    app.state.settings = app_config.settings
     fake_login_service = _FakeLoginService()
     fake_registration_service = _FakeRegistrationService()
     fake_oauth_service = _FakeOAuthService()
@@ -129,9 +130,8 @@ async def client() -> AsyncGenerator[
     app.dependency_overrides[get_current_user] = override_current_user
     app.state.current_user_state = current_user_state
 
-    transport = ASGITransport(app=app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as http_client:
+        async with async_test_client(app) as http_client:
             yield http_client, fake_auth_service, fake_login_service, fake_registration_service, fake_oauth_service, current_user_state
     finally:
         app.dependency_overrides.clear()

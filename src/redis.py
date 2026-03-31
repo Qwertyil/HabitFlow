@@ -10,7 +10,7 @@ from typing import Any, Self, cast
 from redis.asyncio import Redis
 from redis.exceptions import ConnectionError, RedisError
 
-from src.config import settings
+from src.config import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ _HEALTHCHECK_SOCKET_TIMEOUT_SECONDS = 1
 
 
 class RedisAdapter:
-    def __init__(self) -> None:
+    def __init__(self, settings: Settings) -> None:
         self.dsn = settings.redis_dsn
         self._redis: Redis | None = None  # указываем тип
         self._retry_attempts = 3

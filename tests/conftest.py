@@ -7,18 +7,19 @@ import time
 from uuid import uuid4
 
 import docker
-import httpx
 import psycopg2
 import pytest
+from fastapi import Request
 from alembic import command
 from alembic.config import Config
-from httpx import ASGITransport
 from psycopg2.extensions import connection as pg_connection
 from pydantic import Field, PostgresDsn
 from pydantic_settings import BaseSettings
 from redis import Redis as SyncRedis
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+
+from tests.helpers import async_test_client
 
 
 class DatabaseConfig(BaseSettings):
@@ -115,6 +116,7 @@ def _reload_runtime_settings() -> None:
         setattr(settings, field_name, getattr(fresh_settings, field_name))
 
     # Drop cached values so test env changes are reflected everywhere.
+    # `app.state.settings` is the same object as `settings` (see main.create_app(settings)).
     settings.__dict__.pop("session_secret_key", None)
 
 
@@ -393,7 +395,6 @@ async def session(session_factory_async):
 async def redis_db_cleanup(redis_container) -> AsyncGenerator[None, None]:
     from redis.asyncio import Redis
     from src.config import settings
-    from src.dependencies import get_redis_adapter
 
     redis_client = Redis.from_url(settings.redis_dsn, decode_responses=True)
     await redis_client.flushdb()
@@ -402,9 +403,6 @@ async def redis_db_cleanup(redis_container) -> AsyncGenerator[None, None]:
     finally:
         await redis_client.flushdb()
         await redis_client.aclose()
-        cached_adapter = get_redis_adapter()
-        await cached_adapter.close()
-        get_redis_adapter.cache_clear()
 
 
 @pytest.fixture
@@ -445,13 +443,18 @@ def secondary_owner_id(secondary_authenticated_user):
 
 @pytest.fixture
 async def auth_session_id(session, authenticated_user, redis_db_cleanup) -> str:
-    from src.dependencies import get_redis_adapter
+    from src.config import settings
+    from src.redis import RedisAdapter
     from src.repositories import AuthRepository, RedisSessionStore
     from src.services.auth import LoginService
 
+    redis_adapter = RedisAdapter(settings)
     login_service = LoginService(
         auth_repo=AuthRepository(session=session),
-        session_store=RedisSessionStore(redis_adapter=get_redis_adapter()),
+        session_store=RedisSessionStore(
+            redis_adapter=redis_adapter,
+            session_ttl_seconds=settings.AUTH_SESSION_MAX_AGE,
+        ),
     )
     session_id = await login_service.create_session(authenticated_user.id)
     await session.commit()
@@ -462,13 +465,18 @@ async def auth_session_id(session, authenticated_user, redis_db_cleanup) -> str:
 async def secondary_auth_session_id(
     session, secondary_authenticated_user, redis_db_cleanup
 ) -> str:
-    from src.dependencies import get_redis_adapter
+    from src.config import settings
+    from src.redis import RedisAdapter
     from src.repositories import AuthRepository, RedisSessionStore
     from src.services.auth import LoginService
 
+    redis_adapter = RedisAdapter(settings)
     login_service = LoginService(
         auth_repo=AuthRepository(session=session),
-        session_store=RedisSessionStore(redis_adapter=get_redis_adapter()),
+        session_store=RedisSessionStore(
+            redis_adapter=redis_adapter,
+            session_ttl_seconds=settings.AUTH_SESSION_MAX_AGE,
+        ),
     )
     session_id = await login_service.create_session(secondary_authenticated_user.id)
     await session.commit()
@@ -487,7 +495,7 @@ def authed_client_factory(engine_async, session_factory_async):
 
     @asynccontextmanager
     async def make_client(session_id: str):
-        async def override_get_db():
+        async def override_get_db(request: Request):
             async with session_factory_async() as session:
                 try:
                     yield session
@@ -499,10 +507,7 @@ def authed_client_factory(engine_async, session_factory_async):
         app.dependency_overrides[get_db] = override_get_db
         app.dependency_overrides[get_engine] = lambda: engine_async
 
-        transport = ASGITransport(app=app)
-        async with httpx.AsyncClient(
-            transport=transport, base_url="http://test"
-        ) as client:
+        async with async_test_client(app) as client:
             client.cookies.set(settings.AUTH_SESSION_COOKIE_NAME, session_id)
             yield client
 

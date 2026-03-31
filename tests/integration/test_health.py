@@ -1,12 +1,13 @@
 from types import TracebackType
 
 import pytest
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 
 from src.database.connection import get_engine
 from src.dependencies import get_redis_adapter
 from src.main import app
 from tests.api_unit.assertions import assert_json_response
+from tests.helpers import async_test_client
 
 pytestmark = pytest.mark.asyncio
 
@@ -66,8 +67,7 @@ async def test_ready_healthcheck_uses_dedicated_fast_redis_probe() -> None:
     app.dependency_overrides[get_redis_adapter] = lambda: _HealthcheckRedisStub()
 
     try:
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with async_test_client(app) as client:
             response = await client.get("/healthz/ready")
     finally:
         app.dependency_overrides.clear()
@@ -155,8 +155,7 @@ async def test_ready_healthcheck_returns_503_when_dependency_is_unavailable(
     )
 
     try:
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with async_test_client(app) as client:
             response = await client.get("/healthz/ready")
     finally:
         app.dependency_overrides.clear()

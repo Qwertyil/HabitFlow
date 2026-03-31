@@ -3,7 +3,6 @@ from collections.abc import Mapping
 from typing import Any
 from uuid import UUID
 
-from src.config import settings
 from src.redis import RedisAdapter
 
 
@@ -14,17 +13,13 @@ class RedisSessionStore:
     def __init__(
         self,
         redis_adapter: RedisAdapter,
-        session_ttl_seconds: int | None = None,
+        *,
+        session_ttl_seconds: int,
     ) -> None:
         self._redis = redis_adapter
-        ttl = (
-            session_ttl_seconds
-            if session_ttl_seconds is not None
-            else settings.AUTH_SESSION_MAX_AGE
-        )
-        if ttl <= 0:
+        if session_ttl_seconds <= 0:
             raise ValueError("session_ttl_seconds must be greater than zero")
-        self._session_ttl_seconds = ttl
+        self._session_ttl_seconds = session_ttl_seconds
 
     @classmethod
     def _session_key(cls, session_id: str) -> str:

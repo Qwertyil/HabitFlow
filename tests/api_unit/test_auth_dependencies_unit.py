@@ -3,9 +3,10 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator
 
 import pytest
-from fastapi import Depends, FastAPI
+import src.config as app_config
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 
 from src.config import settings
 from src.database.connection import get_db
@@ -20,7 +21,7 @@ from src.dependencies import (
 from src.schemas.auth import AuthUser
 from src.services import HabitService, TaskService, ThemeService
 from tests.api_unit.assertions import assert_json_response, assert_redirect
-from tests.helpers import make_auth_user
+from tests.helpers import async_test_client, make_auth_user
 
 pytestmark = pytest.mark.asyncio
 
@@ -38,6 +39,7 @@ class _FakeLoginService:
 @pytest.fixture
 async def client() -> AsyncGenerator[tuple[AsyncClient, _FakeLoginService], None]:
     app = FastAPI()
+    app.state.settings = app_config.settings
     fake_login_service = _FakeLoginService()
 
     app.dependency_overrides[get_login_service] = lambda: fake_login_service
@@ -54,9 +56,8 @@ async def client() -> AsyncGenerator[tuple[AsyncClient, _FakeLoginService], None
     async def optional(current_user: AuthUser | None = Depends(optional_user)) -> dict[str, bool]:
         return {"authenticated": current_user is not None}
 
-    transport = ASGITransport(app=app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as http_client:
+        async with async_test_client(app) as http_client:
             yield http_client, fake_login_service
     finally:
         app.dependency_overrides.clear()
@@ -123,8 +124,14 @@ async def test_require_auth_returns_user_when_cookie_session_is_valid(
 
 async def test_public_service_providers_do_not_require_authentication() -> None:
     app = FastAPI()
+    app.state.settings = app_config.settings
+    from src.redis import RedisAdapter
 
-    async def override_get_db() -> AsyncGenerator[object, None]:
+    app.state.redis_adapter = RedisAdapter(app_config.settings)
+
+    async def override_get_db(
+        request: Request,
+    ) -> AsyncGenerator[object, None]:
         yield object()
 
     app.dependency_overrides[get_db] = override_get_db
@@ -147,9 +154,8 @@ async def test_public_service_providers_do_not_require_authentication() -> None:
     ) -> dict[str, str]:
         return {"service": service.__class__.__name__}
 
-    transport = ASGITransport(app=app)
     try:
-        async with AsyncClient(transport=transport, base_url="http://test") as http_client:
+        async with async_test_client(app) as http_client:
             for path in ("/theme-service", "/task-service", "/habit-service"):
                 res = await http_client.get(path, headers={"Accept": "application/json"})
                 assert_json_response(res, status_code=200)

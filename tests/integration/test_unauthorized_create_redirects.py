@@ -1,13 +1,13 @@
 from collections.abc import AsyncGenerator
 
-import httpx
 import pytest
-from httpx import ASGITransport, AsyncClient
+from fastapi import Request
+from httpx import AsyncClient
 
 from src.database.connection import get_db, get_engine
 from src.main import app
 from tests.api_unit.assertions import assert_redirect
-from tests.helpers import with_csrf_form
+from tests.helpers import async_test_client, with_csrf_form
 
 pytestmark = pytest.mark.asyncio
 
@@ -16,7 +16,7 @@ pytestmark = pytest.mark.asyncio
 async def anonymous_client(
     engine_async, session_factory_async
 ) -> AsyncGenerator[AsyncClient, None]:
-    async def override_get_db():
+    async def override_get_db(request: Request):
         async with session_factory_async() as session:
             try:
                 yield session
@@ -28,12 +28,8 @@ async def anonymous_client(
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_engine] = lambda: engine_async
 
-    transport = ASGITransport(app=app)
     try:
-        async with httpx.AsyncClient(
-            transport=transport,
-            base_url="http://test",
-        ) as client:
+        async with async_test_client(app) as client:
             yield client
     finally:
         app.dependency_overrides.clear()
