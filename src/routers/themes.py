@@ -258,5 +258,5 @@ async def delete_theme(
     if not res:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Habit not found",
+            detail="Theme not found",
         )

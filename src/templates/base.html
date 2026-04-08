@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="asset-version" content="{{ asset_v }}">
     <meta name="csrf-token" content="{{ csrf_token|default('', true) }}">
     <title>{% block title %}HabitFlow - Управляй своими привычками{% endblock %}</title>
     <script nonce="{{ request.state.csp_nonce|default('', true) }}">

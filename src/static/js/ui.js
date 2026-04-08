@@ -43,6 +43,10 @@
         );
     }
 
+    function getAssetVersion(root = document) {
+        return root.querySelector('meta[name="asset-version"]')?.getAttribute("content") || "";
+    }
+
     function ensureNotificationStack() {
         let stack = document.querySelector(".notification-stack");
         if (!stack) {
@@ -174,6 +178,16 @@
             const html = await response.text();
             const parser = new DOMParser();
             const nextDoc = parser.parseFromString(html, "text/html");
+            const currentAssetVersion = getAssetVersion(document);
+            const nextAssetVersion = getAssetVersion(nextDoc);
+
+            // When a deploy updates static bundles, keep stale tabs from mixing
+            // new HTML with old JS by forcing a full navigation once.
+            if (nextAssetVersion && currentAssetVersion !== nextAssetVersion) {
+                window.location.assign(targetUrl.toString());
+                return;
+            }
+
             const nextNavbar = nextDoc.getElementById("app-navbar");
             const nextMain = nextDoc.getElementById("app-shell-main");
 
