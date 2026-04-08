@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from uuid import uuid4
@@ -293,6 +294,61 @@ def test_verify_password_returns_false_for_invalid_hash_error() -> None:
     login_service.ph = BrokenHasher()  # type: ignore[assignment]
 
     assert login_service.verify_password("strong-pass-123", "$argon2$broken") is False
+
+
+@pytest.mark.asyncio
+async def test_hash_password_async_and_verify_password_async_success() -> None:
+    repo = DummyAuthRepo()
+    login_service = LoginService(auth_repo=repo, auth_settings=AUTH_SETTINGS)
+
+    encoded = await login_service.hash_password_async("strong-pass-123")
+
+    assert encoded.startswith("$argon2")
+    assert await login_service.verify_password_async("strong-pass-123", encoded) is True
+
+
+@pytest.mark.asyncio
+async def test_verify_password_async_returns_false_for_wrong_password() -> None:
+    repo = DummyAuthRepo()
+    login_service = LoginService(auth_repo=repo, auth_settings=AUTH_SETTINGS)
+    encoded = login_service.hash_password("strong-pass-123")
+
+    assert (
+        await login_service.verify_password_async("wrong-pass", encoded) is False
+    )
+
+
+@pytest.mark.asyncio
+async def test_verify_password_async_returns_false_for_malformed_hash() -> None:
+    repo = DummyAuthRepo()
+    login_service = LoginService(auth_repo=repo, auth_settings=AUTH_SETTINGS)
+
+    assert await login_service.verify_password_async("strong-pass-123", "bad-hash") is False
+
+
+@pytest.mark.asyncio
+async def test_auth_password_helpers_offload_with_asyncio_to_thread(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = DummyAuthRepo()
+    login_service = LoginService(auth_repo=repo, auth_settings=AUTH_SETTINGS)
+    calls: list[tuple[object, ...]] = []
+
+    async def fake_to_thread(func, /, *args, **kwargs):  # noqa: ANN001, ANN003
+        calls.append((func, *args))
+        return func(*args, **kwargs)
+
+    monkeypatch.setattr(asyncio, "to_thread", fake_to_thread)
+
+    encoded = await login_service.hash_password_async("strong-pass-123")
+    verified = await login_service.verify_password_async("strong-pass-123", encoded)
+
+    assert verified is True
+    assert len(calls) == 2
+    assert calls[0][0] == login_service.hash_password
+    assert calls[0][1:] == ("strong-pass-123",)
+    assert calls[1][0] == login_service.verify_password
+    assert calls[1][1:] == ("strong-pass-123", encoded)
 
 
 def test_start_google_oauth_login_builds_authorize_url_and_session_payload() -> None:

@@ -1,5 +1,6 @@
 """Base auth service with shared functionality."""
 
+import asyncio
 import secrets
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -133,6 +134,10 @@ class AuthBaseService:
         """Хешировать пароль."""
         return self.ph.hash(password)
 
+    async def hash_password_async(self, password: str) -> str:
+        """Хешировать пароль без блокировки event loop."""
+        return await asyncio.to_thread(self.hash_password, password)
+
     def verify_password(self, password: str, hash: str) -> bool:
         """Проверить пароль против хеша."""
         from argon2.exceptions import InvalidHashError, VerificationError
@@ -141,6 +146,10 @@ class AuthBaseService:
             return self.ph.verify(hash, password)
         except (VerificationError, InvalidHashError):
             return False
+
+    async def verify_password_async(self, password: str, hash: str) -> bool:
+        """Проверить пароль без блокировки event loop."""
+        return await asyncio.to_thread(self.verify_password, password, hash)
 
     async def get_user(self, user_id: UUID) -> AuthUser | None:
         """Получить пользователя по идентификатору."""

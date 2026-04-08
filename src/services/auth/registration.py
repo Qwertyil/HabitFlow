@@ -51,10 +51,11 @@ class RegistrationService(AuthBaseService):
         if existing:
             raise EmailAlreadyExistsError
 
+        password_hash = await self.hash_password_async(payload.password)
         try:
             return await self.auth_repo.create_user(
                 payload.email,
-                self.hash_password(payload.password),
+                password_hash,
             )
         except IntegrityError as exc:
             raise EmailAlreadyExistsError from exc
@@ -62,9 +63,8 @@ class RegistrationService(AuthBaseService):
     async def set_password(self, user_id: UUID, password: str) -> AuthUser | None:
         """Обновить пароль пользователя."""
         validated_password = AuthRegister.validate_password_length(password)
-        return await self.auth_repo.set_user_password(
-            user_id, self.hash_password(validated_password)
-        )
+        password_hash = await self.hash_password_async(validated_password)
+        return await self.auth_repo.set_user_password(user_id, password_hash)
 
     async def set_user_active(self, user_id: UUID, is_active: bool) -> AuthUser | None:
         """Изменить статус активности пользователя."""

@@ -48,7 +48,7 @@ class LoginService(AuthBaseService):
         user = await self.auth_repo.get_user_by_email(payload.email)
         if not user or not user.is_active or not user.password_hash:
             return None
-        if not self.verify_password(payload.password, user.password_hash):
+        if not await self.verify_password_async(payload.password, user.password_hash):
             return None
         return AuthUser.model_validate(user)
 
