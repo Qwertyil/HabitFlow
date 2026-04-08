@@ -64,7 +64,7 @@ jobs:
         run: poetry install --no-interaction --no-root
 
       - name: Run tests
-        run: make test
+        run: make test ENV_FILE=.env.example
 
       - name: Upload coverage to Codecov
         if: ${{ env.CODECOV_TOKEN != '' }}
