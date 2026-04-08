@@ -1,8 +1,18 @@
+import logging
+import os
 import secrets
 from functools import cached_property
 from typing import Literal
+from urllib.parse import quote
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEFAULT_ENV_FILE = ".env"
+
+
+def _quote_url_part(value: str | None) -> str:
+    return quote(value or "", safe="")
 
 
 class Settings(BaseSettings):
@@ -16,9 +26,6 @@ class Settings(BaseSettings):
     REDIS_PORT: int
     REDIS_PASSWORD: str
     REDIS_DB: int
-
-    CONTAINER_APP_PORT: int
-    APP_PORT: int
 
     UI_SESSION_SECRET_KEY: str | None = None
     UI_SESSION_COOKIE_NAME: str = "habitflow_session"
@@ -43,6 +50,34 @@ class Settings(BaseSettings):
     TESTING: bool = False
     API_DOCS_ENABLED: bool = False
 
+    LOG_LEVEL: str | None = None
+
+    @field_validator("LOG_LEVEL", mode="before")
+    @classmethod
+    def normalize_log_level(cls, value: object) -> str | None:
+        if value is None or value == "":
+            return None
+        if isinstance(value, str):
+            stripped = value.strip()
+            return stripped.upper() if stripped else None
+        return str(value).upper()
+
+    @property
+    def logging_level(self) -> int:
+        """Уровень логирования root logger: LOG_LEVEL из env или DEBUG/INFO по флагу DEBUG."""
+        name = (
+            self.LOG_LEVEL
+            if self.LOG_LEVEL is not None
+            else ("DEBUG" if self.DEBUG else "INFO")
+        )
+        mapping = logging.getLevelNamesMapping()
+        try:
+            return mapping[name]
+        except KeyError as err:
+            allowed = ", ".join(sorted(mapping))
+            msg = f"Invalid LOG_LEVEL={name!r}; allowed: {allowed}"
+            raise ValueError(msg) from err
+
     @property
     def google_oauth_enabled(self) -> bool:
         return bool(
@@ -52,16 +87,33 @@ class Settings(BaseSettings):
         )
 
     @property
+    def _postgres_auth(self) -> str:
+        user = _quote_url_part(self.POSTGRES_USER)
+        password = _quote_url_part(self.POSTGRES_PASSWORD)
+        return f"{user}:{password}"
+
+    def _build_postgres_url(self, driver: str) -> str:
+        return (
+            f"postgresql+{driver}://"
+            f"{self._postgres_auth}@"
+            f"{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/"
+            f"{self.POSTGRES_DB}"
+        )
+
+    @property
     def DATABASE_URL_asyncpg(self) -> str:
-        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        return self._build_postgres_url("asyncpg")
 
     @property
     def DATABASE_URL_psycopg2(self) -> str:
-        return f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        return self._build_postgres_url("psycopg2")
 
     @property
     def redis_dsn(self) -> str:
-        auth = f":{self.REDIS_PASSWORD}@" if self.REDIS_PASSWORD else ""
+        auth = ""
+        if self.REDIS_PASSWORD:
+            auth = f":{_quote_url_part(self.REDIS_PASSWORD)}@"
+
         return f"redis://{auth}{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
     @cached_property
@@ -72,7 +124,15 @@ class Settings(BaseSettings):
             raise ValueError("UI_SESSION_SECRET_KEY must be set when DEBUG=False")
         return secrets.token_urlsafe(32)
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=DEFAULT_ENV_FILE, extra="ignore")
 
 
-settings = Settings()
+def load_settings() -> Settings:
+    """
+    Собрать настройки из окружения (без кэша; один вызов на процесс/инстанс приложения).
+
+    Путь к dotenv задаётся только переменной окружения ENV_FILE (не из самого .env),
+    чтобы можно было поднимать инстансы с разными файлами, например ``ENV_FILE=.env.prod``.
+    """
+    env_file = os.environ.get("ENV_FILE", DEFAULT_ENV_FILE)
+    return Settings(_env_file=env_file)

@@ -6,8 +6,7 @@ from fastapi import Depends, FastAPI, Request
 from httpx import AsyncClient
 from redis.asyncio import Redis
 
-import src.config as app_config
-from src.config import settings
+from src.config import load_settings
 from src.database.connection import get_db
 from src.dependencies import require_auth
 from src.redis import RedisAdapter
@@ -21,9 +20,10 @@ pytestmark = pytest.mark.asyncio
 
 @pytest.fixture
 async def protected_client(session_factory_async) -> AsyncGenerator[AsyncClient, None]:
+    cfg = load_settings()
     app = FastAPI()
-    app.state.settings = app_config.settings
-    app.state.redis_adapter = RedisAdapter(app_config.settings)
+    app.state.settings = cfg
+    app.state.redis_adapter = RedisAdapter(cfg)
 
     async def override_get_db(request: Request):
         async with session_factory_async() as session:
@@ -51,7 +51,8 @@ async def protected_client(session_factory_async) -> AsyncGenerator[AsyncClient,
 
 @pytest.fixture
 async def redis_db_cleanup(redis_container) -> AsyncGenerator[None, None]:
-    redis_client = Redis.from_url(settings.redis_dsn, decode_responses=True)
+    cfg = load_settings()
+    redis_client = Redis.from_url(cfg.redis_dsn, decode_responses=True)
     await redis_client.flushdb()
     try:
         yield
@@ -65,14 +66,19 @@ async def test_auth_full_flow_login_resolve_logout_then_unauthorized(
     protected_client: AsyncClient,
     redis_db_cleanup,
 ) -> None:
+    cfg = load_settings()
     auth_repo = AuthRepository(session=session)
-    redis_adapter = RedisAdapter(settings)
+    redis_adapter = RedisAdapter(cfg)
     session_store = RedisSessionStore(
         redis_adapter=redis_adapter,
-        session_ttl_seconds=settings.AUTH_SESSION_MAX_AGE,
+        session_ttl_seconds=cfg.AUTH_SESSION_MAX_AGE,
     )
-    registration_service = RegistrationService(auth_repo=auth_repo, session_store=session_store)
-    login_service = LoginService(auth_repo=auth_repo, session_store=session_store)
+    registration_service = RegistrationService(
+        auth_repo=auth_repo, auth_settings=cfg, session_store=session_store
+    )
+    login_service = LoginService(
+        auth_repo=auth_repo, auth_settings=cfg, session_store=session_store
+    )
 
     email = f"full-flow-{uuid4().hex[:12]}@example.com"
     password = "strong-pass-123"
@@ -96,7 +102,7 @@ async def test_auth_full_flow_login_resolve_logout_then_unauthorized(
 
     authorized_response = await protected_client.get(
         "/protected",
-        headers={"Cookie": f"{settings.AUTH_SESSION_COOKIE_NAME}={session_id}"},
+        headers={"Cookie": f"{cfg.AUTH_SESSION_COOKIE_NAME}={session_id}"},
     )
     assert authorized_response.status_code == 200
     assert authorized_response.headers["content-type"].startswith("application/json")
@@ -109,7 +115,7 @@ async def test_auth_full_flow_login_resolve_logout_then_unauthorized(
         "/protected",
         headers={
             "Accept": "application/json",
-            "Cookie": f"{settings.AUTH_SESSION_COOKIE_NAME}={session_id}",
+            "Cookie": f"{cfg.AUTH_SESSION_COOKIE_NAME}={session_id}",
         },
     )
     assert unauthorized_response.status_code == 401

@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from src.config import settings
+import src.main as main_module
 from src.schemas.auth import AuthUser
 from tests.helpers import make_auth_user
 
@@ -287,15 +287,16 @@ def _extract_google_oauth_href(html: str) -> str:
 
 @pytest.fixture(autouse=True)
 def configure_google_oauth() -> None:
-    original_client_id = settings.GOOGLE_OAUTH_CLIENT_ID
-    original_client_secret = settings.GOOGLE_OAUTH_CLIENT_SECRET
-    original_redirect_uri = settings.GOOGLE_OAUTH_REDIRECT_URI
-    settings.GOOGLE_OAUTH_CLIENT_ID = "google-client-id"
-    settings.GOOGLE_OAUTH_CLIENT_SECRET = "google-client-secret"
-    settings.GOOGLE_OAUTH_REDIRECT_URI = "http://test/auth/google/callback"
+    s = main_module.settings
+    original_client_id = s.GOOGLE_OAUTH_CLIENT_ID
+    original_client_secret = s.GOOGLE_OAUTH_CLIENT_SECRET
+    original_redirect_uri = s.GOOGLE_OAUTH_REDIRECT_URI
+    s.GOOGLE_OAUTH_CLIENT_ID = "google-client-id"
+    s.GOOGLE_OAUTH_CLIENT_SECRET = "google-client-secret"
+    s.GOOGLE_OAUTH_REDIRECT_URI = "http://test/auth/google/callback"
     try:
         yield
     finally:
-        settings.GOOGLE_OAUTH_CLIENT_ID = original_client_id
-        settings.GOOGLE_OAUTH_CLIENT_SECRET = original_client_secret
-        settings.GOOGLE_OAUTH_REDIRECT_URI = original_redirect_uri
+        s.GOOGLE_OAUTH_CLIENT_ID = original_client_id
+        s.GOOGLE_OAUTH_CLIENT_SECRET = original_client_secret
+        s.GOOGLE_OAUTH_REDIRECT_URI = original_redirect_uri

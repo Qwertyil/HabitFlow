@@ -1,5 +1,16 @@
-include .env
-export
+ENV_FILE ?= .env
+
+ENV_REQUIRED_GOALS := run test test-pre-push check \
+	infra-up infra-down infra-restart infra-logs \
+	compose-up compose-down compose-logs \
+	migration psql
+ACTIVE_GOALS := $(if $(MAKECMDGOALS),$(MAKECMDGOALS),run)
+
+ifneq ($(strip $(filter $(ENV_REQUIRED_GOALS),$(ACTIVE_GOALS))),)
+ifeq ($(strip $(wildcard $(ENV_FILE))),)
+$(error ENV_FILE '$(ENV_FILE)' does not exist)
+endif
+endif
 
 .PHONY: run test test-pre-push lint format typecheck pre-commit check \
 	infra-up infra-down infra-restart infra-logs \
@@ -7,19 +18,17 @@ export
 	compose-up compose-down compose-logs \
 	migration psql
 
-UVICORN_RELOAD :=
-ifneq (,$(filter True true 1,$(DEBUG)))
-UVICORN_RELOAD = --reload
-endif
+DOTENV_RUN = poetry run -- dotenv -f $(ENV_FILE) run --
+COMPOSE = docker compose --env-file $(ENV_FILE)
 
 run:
-	poetry run uvicorn src.main:app --port $(APP_PORT) $(UVICORN_RELOAD)
+	$(DOTENV_RUN) python -m src.run_app
 
 test:
-	PYTHONPATH=. poetry run pytest -x tests -v --junitxml=junit.xml --cov=src --cov-branch --cov-report=term --cov-report=xml:coverage.xml --cov-report=html:htmlcov --cov-fail-under=80
+	$(DOTENV_RUN) env PYTHONPATH=. poetry run pytest -x tests -v --junitxml=junit.xml --cov=src --cov-branch --cov-report=term --cov-report=xml:coverage.xml --cov-report=html:htmlcov --cov-fail-under=80
 
 test-pre-push:
-	PYTHONPATH=. poetry run pytest -x tests -v --cov=src --cov-branch --cov-report=term --cov-fail-under=80
+	$(DOTENV_RUN) env PYTHONPATH=. poetry run pytest -x tests -v --cov=src --cov-branch --cov-report=term --cov-fail-under=80
 
 lint:
 	poetry run ruff check . --force-exclude
@@ -37,31 +46,31 @@ pre-commit:
 check: format lint typecheck test
 
 infra-up:
-	docker compose up -d postgres redis
+	$(COMPOSE) up -d postgres redis
 
 infra-down:
-	docker compose stop postgres redis
+	$(COMPOSE) stop postgres redis
 
 infra-restart:
-	docker compose restart postgres redis
+	$(COMPOSE) restart postgres redis
 
 infra-logs:
-	docker compose logs -f postgres redis
+	$(COMPOSE) logs -f postgres redis
 
 compose-up:
-	docker compose up -d --build
+	$(COMPOSE) up -d --build
 
 compose-down:
-	docker compose down
+	$(COMPOSE) down
 
 compose-logs:
-	docker compose logs -f
+	$(COMPOSE) logs -f
 
 migration:
-	docker compose exec app alembic upgrade head
+	$(COMPOSE) exec app alembic upgrade head
 
 psql:
-	docker compose exec postgres psql "dbname=$(POSTGRES_DB) user=$(POSTGRES_USER) password=$(POSTGRES_PASSWORD)"
+	$(COMPOSE) exec postgres sh -c 'psql "dbname=$$POSTGRES_DB user=$$POSTGRES_USER password=$$POSTGRES_PASSWORD"'
 
 %:
 	@:

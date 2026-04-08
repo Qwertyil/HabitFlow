@@ -3,12 +3,11 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator
 
 import pytest
-import src.config as app_config
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from httpx import AsyncClient
 
-from src.config import settings
+import src.main as main_module
 from src.database.connection import get_db
 from src.dependencies import (
     get_habit_service,
@@ -39,7 +38,7 @@ class _FakeLoginService:
 @pytest.fixture
 async def client() -> AsyncGenerator[tuple[AsyncClient, _FakeLoginService], None]:
     app = FastAPI()
-    app.state.settings = app_config.settings
+    app.state.settings = main_module.settings
     fake_login_service = _FakeLoginService()
 
     app.dependency_overrides[get_login_service] = lambda: fake_login_service
@@ -98,7 +97,7 @@ async def test_optional_user_resolves_user_by_auth_cookie(
 
     res = await http_client.get(
         "/optional",
-        headers={"Cookie": f"{settings.AUTH_SESSION_COOKIE_NAME}=sess-123"},
+        headers={"Cookie": f"{main_module.settings.AUTH_SESSION_COOKIE_NAME}=sess-123"},
     )
 
     assert_json_response(res, status_code=200)
@@ -114,7 +113,7 @@ async def test_require_auth_returns_user_when_cookie_session_is_valid(
 
     res = await http_client.get(
         "/protected-json",
-        headers={"Cookie": f"{settings.AUTH_SESSION_COOKIE_NAME}=sess-valid"},
+        headers={"Cookie": f"{main_module.settings.AUTH_SESSION_COOKIE_NAME}=sess-valid"},
     )
 
     assert_json_response(res, status_code=200)
@@ -124,10 +123,10 @@ async def test_require_auth_returns_user_when_cookie_session_is_valid(
 
 async def test_public_service_providers_do_not_require_authentication() -> None:
     app = FastAPI()
-    app.state.settings = app_config.settings
+    app.state.settings = main_module.settings
     from src.redis import RedisAdapter
 
-    app.state.redis_adapter = RedisAdapter(app_config.settings)
+    app.state.redis_adapter = RedisAdapter(main_module.settings)
 
     async def override_get_db(
         request: Request,

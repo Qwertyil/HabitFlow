@@ -6,13 +6,12 @@ from typing import Never
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
-import src.config as app_config
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from httpx import AsyncClient
 from starlette.middleware.sessions import SessionMiddleware
 
-from src.config import settings
+import src.main as main_module
 from src.dependencies import _is_html_request, get_current_user, get_login_service, get_oauth_service, get_registration_service
 from src.exceptions import (
     EmailAlreadyExistsError,
@@ -90,7 +89,7 @@ async def client() -> AsyncGenerator[
     None,
 ]:
     app = FastAPI()
-    app.state.settings = app_config.settings
+    app.state.settings = main_module.settings
     fake_login_service = _FakeLoginService()
     fake_registration_service = _FakeRegistrationService()
     fake_oauth_service = _FakeOAuthService()
@@ -102,8 +101,8 @@ async def client() -> AsyncGenerator[
 
     app.add_middleware(
         SessionMiddleware,
-        secret_key=settings.session_secret_key,
-        session_cookie=settings.UI_SESSION_COOKIE_NAME,
+        secret_key=main_module.settings.session_secret_key,
+        session_cookie=main_module.settings.UI_SESSION_COOKIE_NAME,
     )
     app.mount("/static", StaticFiles(directory="src/static"), name="static")
     app.include_router(auth_router)
@@ -177,9 +176,9 @@ async def test_login_page_hides_google_oauth_when_not_configured(
     client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
     http_client, _, _, _, _, _state = client
-    settings.GOOGLE_OAUTH_CLIENT_ID = None
-    settings.GOOGLE_OAUTH_CLIENT_SECRET = None
-    settings.GOOGLE_OAUTH_REDIRECT_URI = None
+    main_module.settings.GOOGLE_OAUTH_CLIENT_ID = None
+    main_module.settings.GOOGLE_OAUTH_CLIENT_SECRET = None
+    main_module.settings.GOOGLE_OAUTH_REDIRECT_URI = None
 
     res = await http_client.get(
         "/auth/login?next=/tasks?filter=today",
@@ -274,7 +273,7 @@ async def test_google_callback_creates_local_session_and_redirects_to_saved_next
 
     assert res.status_code == 303
     assert res.headers["location"] == "/tasks"
-    assert settings.AUTH_SESSION_COOKIE_NAME in res.headers.get("set-cookie", "")
+    assert main_module.settings.AUTH_SESSION_COOKIE_NAME in res.headers.get("set-cookie", "")
     assert fake_auth_service.oauth_user_calls == [
         {
             "email": "oauth@example.com",
@@ -426,7 +425,7 @@ async def test_google_callback_rejects_expired_state(
     session_before = await http_client.get("/__test/session")
     oauth_session = session_before.json()["google_oauth"]
     expired_issued_at = (
-        datetime.now(UTC) - timedelta(seconds=settings.GOOGLE_OAUTH_STATE_TTL + 1)
+        datetime.now(UTC) - timedelta(seconds=main_module.settings.GOOGLE_OAUTH_STATE_TTL + 1)
     ).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     oauth_session["issued_at"] = expired_issued_at
     await http_client.post("/__test/session", json={"google_oauth": oauth_session})
@@ -582,9 +581,9 @@ async def test_register_page_hides_google_oauth_when_not_configured(
     client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
     http_client, _, _, _, _, _state = client
-    settings.GOOGLE_OAUTH_CLIENT_ID = None
-    settings.GOOGLE_OAUTH_CLIENT_SECRET = None
-    settings.GOOGLE_OAUTH_REDIRECT_URI = None
+    main_module.settings.GOOGLE_OAUTH_CLIENT_ID = None
+    main_module.settings.GOOGLE_OAUTH_CLIENT_SECRET = None
+    main_module.settings.GOOGLE_OAUTH_REDIRECT_URI = None
 
     res = await http_client.get(
         "/auth/register?next=/habits?page=2",
@@ -685,7 +684,7 @@ async def test_login_form_redirects_after_success(
 
     assert res.status_code == 303
     assert res.headers["location"] == "/tasks"
-    assert settings.AUTH_SESSION_COOKIE_NAME in res.headers.get("set-cookie", "")
+    assert main_module.settings.AUTH_SESSION_COOKIE_NAME in res.headers.get("set-cookie", "")
 
 
 async def test_login_json_returns_user_and_sets_cookie(
@@ -702,7 +701,7 @@ async def test_login_json_returns_user_and_sets_cookie(
     assert res.status_code == 200
     assert res.headers["content-type"].startswith("application/json")
     assert res.json()["email"] == "user@example.com"
-    assert settings.AUTH_SESSION_COOKIE_NAME in res.headers.get("set-cookie", "")
+    assert main_module.settings.AUTH_SESSION_COOKIE_NAME in res.headers.get("set-cookie", "")
 
 
 async def test_login_json_returns_409_for_authenticated_user_without_auth_attempt(
@@ -941,7 +940,7 @@ async def test_register_form_redirects_after_success(
 
     assert res.status_code == 303
     assert res.headers["location"] == "/tasks"
-    assert settings.AUTH_SESSION_COOKIE_NAME in res.headers.get("set-cookie", "")
+    assert main_module.settings.AUTH_SESSION_COOKIE_NAME in res.headers.get("set-cookie", "")
 
 
 async def test_register_form_returns_conflict_error_when_email_exists(
@@ -982,7 +981,7 @@ async def test_register_json_returns_user_and_sets_cookie(
     assert res.status_code == 201
     assert res.headers["content-type"].startswith("application/json")
     assert res.json()["email"] == "new@example.com"
-    assert settings.AUTH_SESSION_COOKIE_NAME in res.headers.get("set-cookie", "")
+    assert main_module.settings.AUTH_SESSION_COOKIE_NAME in res.headers.get("set-cookie", "")
 
 
 async def test_register_json_returns_409_for_authenticated_user_without_register_attempt(
@@ -1087,7 +1086,7 @@ async def test_logout_form_clears_cookie_and_redirects_home(
     csrf_token = extract_csrf_token(page.text)
 
     current_user = make_auth_user()
-    http_client.cookies.set(settings.AUTH_SESSION_COOKIE_NAME, "session-123")
+    http_client.cookies.set(main_module.settings.AUTH_SESSION_COOKIE_NAME, "session-123")
     current_user_state["value"] = current_user
 
     res = await http_client.post(
@@ -1100,7 +1099,7 @@ async def test_logout_form_clears_cookie_and_redirects_home(
     assert res.status_code == 303
     assert res.headers["location"] == "/"
     assert fake_auth_service.logout_calls == [("session-123", str(current_user.id))]
-    assert f"{settings.AUTH_SESSION_COOKIE_NAME}=" in res.headers.get("set-cookie", "")
+    assert f"{main_module.settings.AUTH_SESSION_COOKIE_NAME}=" in res.headers.get("set-cookie", "")
 
 
 async def test_logout_form_normalizes_unsafe_next_target(
@@ -1111,7 +1110,7 @@ async def test_logout_form_normalizes_unsafe_next_target(
     csrf_token = extract_csrf_token(page.text)
 
     current_user = make_auth_user()
-    http_client.cookies.set(settings.AUTH_SESSION_COOKIE_NAME, "session-unsafe")
+    http_client.cookies.set(main_module.settings.AUTH_SESSION_COOKIE_NAME, "session-unsafe")
     current_user_state["value"] = current_user
 
     res = await http_client.post(
@@ -1154,7 +1153,7 @@ async def test_logout_json_logs_out_and_clears_cookie(
     http_client, fake_auth_service, _, _, _, current_user_state = client
     current_user = make_auth_user()
     current_user_state["value"] = current_user
-    http_client.cookies.set(settings.AUTH_SESSION_COOKIE_NAME, "session-json")
+    http_client.cookies.set(main_module.settings.AUTH_SESSION_COOKIE_NAME, "session-json")
 
     res = await http_client.post("/auth/logout", json={"next": "/tasks"})
 
@@ -1162,7 +1161,7 @@ async def test_logout_json_logs_out_and_clears_cookie(
     assert res.headers["content-type"].startswith("application/json")
     assert res.json() == {"message": "Logged out"}
     assert fake_auth_service.logout_calls == [("session-json", str(current_user.id))]
-    assert f"{settings.AUTH_SESSION_COOKIE_NAME}=" in res.headers.get("set-cookie", "")
+    assert f"{main_module.settings.AUTH_SESSION_COOKIE_NAME}=" in res.headers.get("set-cookie", "")
 
 
 async def test_logout_json_without_user_or_session_skips_service_call(

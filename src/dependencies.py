@@ -5,6 +5,7 @@ import httpx
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.config import Settings
 from src.database.connection import get_db
 from src.redis import RedisAdapter
 from src.repositories import (
@@ -25,6 +26,10 @@ from src.services.zen_quote import ZenQuotesService
 from src.utils import build_template_context
 
 _AUTH_LOGIN_PATH = "/auth/login"
+
+
+def get_settings(request: Request) -> Settings:
+    return cast(Settings, request.app.state.settings)
 
 
 def _is_html_request(request: Request) -> bool:
@@ -61,13 +66,13 @@ async def get_auth_repository(
 
 
 async def get_session_store(
-    request: Request,
     redis_adapter: RedisAdapter = Depends(get_redis_adapter),
+    app_settings: Settings = Depends(get_settings),
 ) -> RedisSessionStore:
     """Провайдер для session-store (Redis)."""
     return RedisSessionStore(
         redis_adapter=redis_adapter,
-        session_ttl_seconds=request.app.state.settings.AUTH_SESSION_MAX_AGE,
+        session_ttl_seconds=app_settings.AUTH_SESSION_MAX_AGE,
     )
 
 
@@ -77,58 +82,57 @@ async def get_http_client(request: Request) -> httpx.AsyncClient | None:
 
 
 async def get_login_service(
-    request: Request,
     auth_repo: AuthRepository = Depends(get_auth_repository),
     session_store: RedisSessionStore = Depends(get_session_store),
     http_client: httpx.AsyncClient | None = Depends(get_http_client),
+    auth_settings: Settings = Depends(get_settings),
 ) -> LoginService:
     """Провайдер для LoginService."""
     return LoginService(
         auth_repo=auth_repo,
+        auth_settings=auth_settings,
         session_store=session_store,
         http_client=http_client,
-        auth_settings=request.app.state.settings,
     )
 
 
 async def get_registration_service(
-    request: Request,
     auth_repo: AuthRepository = Depends(get_auth_repository),
     session_store: RedisSessionStore = Depends(get_session_store),
     http_client: httpx.AsyncClient | None = Depends(get_http_client),
+    auth_settings: Settings = Depends(get_settings),
 ) -> RegistrationService:
     """Провайдер для RegistrationService."""
     return RegistrationService(
         auth_repo=auth_repo,
+        auth_settings=auth_settings,
         session_store=session_store,
         http_client=http_client,
-        auth_settings=request.app.state.settings,
     )
 
 
 async def get_oauth_service(
-    request: Request,
     auth_repo: AuthRepository = Depends(get_auth_repository),
     session_store: RedisSessionStore = Depends(get_session_store),
     http_client: httpx.AsyncClient | None = Depends(get_http_client),
+    auth_settings: Settings = Depends(get_settings),
 ) -> OAuthService:
     """Провайдер для OAuthService."""
     return OAuthService(
         auth_repo=auth_repo,
+        auth_settings=auth_settings,
         session_store=session_store,
         http_client=http_client,
-        auth_settings=request.app.state.settings,
     )
 
 
 async def get_current_user(
     request: Request,
     login_service: LoginService = Depends(get_login_service),
+    auth_settings: Settings = Depends(get_settings),
 ) -> AuthUser | None:
     """Достать пользователя по session-id из cookie через Redis и БД."""
-    session_id = request.cookies.get(
-        request.app.state.settings.AUTH_SESSION_COOKIE_NAME
-    )
+    session_id = request.cookies.get(auth_settings.AUTH_SESSION_COOKIE_NAME)
     if not session_id:
         return None
 
@@ -326,14 +330,14 @@ def get_quote_batch_repository(
 
 
 def get_zenquotes_service(
-    request: Request,
     http_client: httpx.AsyncClient | None = Depends(get_http_client),
+    app_settings: Settings = Depends(get_settings),
 ) -> ZenQuotesService:
     if http_client is None:
         raise RuntimeError("HTTP client is not available")
     return ZenQuotesService(
         http_client,
-        api_url=request.app.state.settings.ZENQUOTES_API_URL,
+        api_url=app_settings.ZENQUOTES_API_URL,
     )
 
 

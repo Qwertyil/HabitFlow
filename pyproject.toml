@@ -24,7 +24,8 @@ dependencies = [
     "argon2-cffi (>=25.1.0,<26.0.0)",
     "email-validator (>=2.3.0,<3.0.0)",
     "apscheduler (>=3.11.2,<4.0.0)",
-    "fastapi-limiter (>=0.2.0,<0.3.0)"
+    "fastapi-limiter (>=0.2.0,<0.3.0)",
+    "python-dotenv (==1.2.1)"
 ]
 
 

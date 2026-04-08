@@ -38,9 +38,9 @@ def _resolve_database_url() -> str:
     if env_url:
         return _normalize_sync_database_url(env_url)
 
-    from src.config import settings
+    from src.config import load_settings
 
-    return settings.DATABASE_URL_psycopg2
+    return load_settings().DATABASE_URL_psycopg2
 
 
 config.set_main_option("sqlalchemy.url", _resolve_database_url())

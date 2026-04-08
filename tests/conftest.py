@@ -81,8 +81,6 @@ REDIS_TEST_PORT = _find_free_tcp_port()
 SAFE_TEST_ENV = {
     "DEBUG": "true",
     "TESTING": "true",
-    "CONTAINER_APP_PORT": "8000",
-    "APP_PORT": "8000",
     "ZENQUOTES_API_URL": "http://test.invalid/api/random",
     "REFILL_INTERVAL_HOURS": "6",
     "UI_SESSION_SECRET_KEY": "test-ui-session-secret",
@@ -108,16 +106,14 @@ def _set_safe_test_env() -> None:
         os.environ[key] = value
 
 
-def _reload_runtime_settings() -> None:
-    from src.config import Settings, settings
+def _sync_main_app_settings() -> None:
+    """Перечитать Settings из env и привязать к `src.main` ASGI-приложению."""
+    import src.main as main_module
+    from src.config import load_settings
 
-    fresh_settings = Settings()
-    for field_name in Settings.model_fields:
-        setattr(settings, field_name, getattr(fresh_settings, field_name))
-
-    # Drop cached values so test env changes are reflected everywhere.
-    # `app.state.settings` is the same object as `settings` (see main.create_app(settings)).
-    settings.__dict__.pop("session_secret_key", None)
+    new_settings = load_settings()
+    main_module.settings = new_settings
+    main_module.app.state.settings = new_settings
 
 
 def _restore_env(snapshot: dict[str, str | None]) -> None:
@@ -131,7 +127,7 @@ def _restore_env(snapshot: dict[str, str | None]) -> None:
 _ORIGINAL_TEST_ENV = {key: os.environ.get(key) for key in SAFE_TEST_ENV}
 # Применяем env до импорта тестовых модулей: часть тестов импортирует app на этапе коллекции.
 _set_safe_test_env()
-_reload_runtime_settings()
+_sync_main_app_settings()
 
 
 def _clear_auth_rate_limiters() -> None:
@@ -161,7 +157,7 @@ def _clear_auth_rate_limiters() -> None:
 @pytest.fixture(scope="session", autouse=True)
 def safe_test_env() -> Iterator[None]:
     _set_safe_test_env()
-    _reload_runtime_settings()
+    _sync_main_app_settings()
     yield
     _restore_env(_ORIGINAL_TEST_ENV)
 
@@ -169,7 +165,7 @@ def safe_test_env() -> Iterator[None]:
 @pytest.fixture(autouse=True)
 def refresh_test_runtime() -> Iterator[None]:
     _set_safe_test_env()
-    _reload_runtime_settings()
+    _sync_main_app_settings()
     _clear_auth_rate_limiters()
     yield
     _clear_auth_rate_limiters()
@@ -394,9 +390,9 @@ async def session(session_factory_async):
 @pytest.fixture
 async def redis_db_cleanup(redis_container) -> AsyncGenerator[None, None]:
     from redis.asyncio import Redis
-    from src.config import settings
+    import src.main as main_module
 
-    redis_client = Redis.from_url(settings.redis_dsn, decode_responses=True)
+    redis_client = Redis.from_url(main_module.settings.redis_dsn, decode_responses=True)
     await redis_client.flushdb()
     try:
         yield
@@ -443,17 +439,19 @@ def secondary_owner_id(secondary_authenticated_user):
 
 @pytest.fixture
 async def auth_session_id(session, authenticated_user, redis_db_cleanup) -> str:
-    from src.config import settings
+    import src.main as main_module
     from src.redis import RedisAdapter
     from src.repositories import AuthRepository, RedisSessionStore
     from src.services.auth import LoginService
 
-    redis_adapter = RedisAdapter(settings)
+    cfg = main_module.settings
+    redis_adapter = RedisAdapter(cfg)
     login_service = LoginService(
         auth_repo=AuthRepository(session=session),
+        auth_settings=cfg,
         session_store=RedisSessionStore(
             redis_adapter=redis_adapter,
-            session_ttl_seconds=settings.AUTH_SESSION_MAX_AGE,
+            session_ttl_seconds=cfg.AUTH_SESSION_MAX_AGE,
         ),
     )
     session_id = await login_service.create_session(authenticated_user.id)
@@ -465,17 +463,19 @@ async def auth_session_id(session, authenticated_user, redis_db_cleanup) -> str:
 async def secondary_auth_session_id(
     session, secondary_authenticated_user, redis_db_cleanup
 ) -> str:
-    from src.config import settings
+    import src.main as main_module
     from src.redis import RedisAdapter
     from src.repositories import AuthRepository, RedisSessionStore
     from src.services.auth import LoginService
 
-    redis_adapter = RedisAdapter(settings)
+    cfg = main_module.settings
+    redis_adapter = RedisAdapter(cfg)
     login_service = LoginService(
         auth_repo=AuthRepository(session=session),
+        auth_settings=cfg,
         session_store=RedisSessionStore(
             redis_adapter=redis_adapter,
-            session_ttl_seconds=settings.AUTH_SESSION_MAX_AGE,
+            session_ttl_seconds=cfg.AUTH_SESSION_MAX_AGE,
         ),
     )
     session_id = await login_service.create_session(secondary_authenticated_user.id)
@@ -490,8 +490,8 @@ def authed_client_factory(engine_async, session_factory_async):
     """
     from src.database.connection import get_db
     from src.database.connection import get_engine
-    from src.config import settings
     from src.main import app
+    import src.main as main_module
 
     @asynccontextmanager
     async def make_client(session_id: str):
@@ -508,7 +508,7 @@ def authed_client_factory(engine_async, session_factory_async):
         app.dependency_overrides[get_engine] = lambda: engine_async
 
         async with async_test_client(app) as client:
-            client.cookies.set(settings.AUTH_SESSION_COOKIE_NAME, session_id)
+            client.cookies.set(main_module.settings.AUTH_SESSION_COOKIE_NAME, session_id)
             yield client
 
         app.dependency_overrides.clear()

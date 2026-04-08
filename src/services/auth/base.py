@@ -34,22 +34,18 @@ class AuthBaseService:
 
     def __init__(
         self,
+        *,
         auth_repo: AuthRepository,
+        auth_settings: Settings,
         session_store: RedisSessionStore | None = None,
         session_ttl_seconds: int | None = None,
         google_oauth_state_ttl_seconds: int | None = None,
-        auth_settings: Settings | None = None,
         http_client: httpx.AsyncClient | None = None,
         google_oauth_client_factory: Callable[[], GoogleOauth] | None = None,
         state_token_provider: Callable[[], str] | None = None,
         now_provider: Callable[[], datetime] | None = None,
     ):
         """Инициализировать базовый сервис авторизации."""
-        if auth_settings is None:
-            from src.config import settings as runtime_settings
-
-            auth_settings = runtime_settings
-
         resolved_session_ttl = (
             session_ttl_seconds
             if session_ttl_seconds is not None

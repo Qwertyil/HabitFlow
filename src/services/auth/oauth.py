@@ -52,6 +52,7 @@ class OAuthService(AuthBaseService):
         self,
         *,
         auth_repo: "AuthRepository",
+        auth_settings: Settings,
         session_store: "RedisSessionStore | None" = None,
         session_ttl_seconds: int | None = None,
         google_oauth_state_ttl_seconds: int | None = None,
@@ -60,15 +61,14 @@ class OAuthService(AuthBaseService):
         state_token_provider: "Callable[[], str] | None" = None,
         now_provider: "Callable[[], datetime] | None" = None,
         login_session_creator: "Callable[[UUID], Callable[[], str]] | None" = None,
-        auth_settings: Settings | None = None,
     ):
         """Инициализировать OAuth сервис."""
         super().__init__(
             auth_repo=auth_repo,
+            auth_settings=auth_settings,
             session_store=session_store,
             session_ttl_seconds=session_ttl_seconds,
             google_oauth_state_ttl_seconds=google_oauth_state_ttl_seconds,
-            auth_settings=auth_settings,
             http_client=http_client,
             google_oauth_client_factory=google_oauth_client_factory,
             state_token_provider=state_token_provider,
@@ -159,10 +159,10 @@ class OAuthService(AuthBaseService):
 
             login_service = LoginService(
                 auth_repo=self.auth_repo,
+                auth_settings=self._auth_settings,
                 session_store=self._session_store,
                 session_ttl_seconds=self._session_ttl_seconds,
                 google_oauth_state_ttl_seconds=self._google_oauth_state_ttl_seconds,
-                auth_settings=self._auth_settings,
                 now_provider=self._now_provider,
             )
             session_id = await login_service.create_session(user.id)

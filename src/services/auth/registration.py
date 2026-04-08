@@ -23,6 +23,7 @@ class RegistrationService(AuthBaseService):
         self,
         *,
         auth_repo: AuthRepository,
+        auth_settings: Settings,
         session_store: RedisSessionStore | None = None,
         session_ttl_seconds: int | None = None,
         google_oauth_state_ttl_seconds: int | None = None,
@@ -30,15 +31,14 @@ class RegistrationService(AuthBaseService):
         google_oauth_client_factory: Callable[[], GoogleOauth] | None = None,
         state_token_provider: Callable[[], str] | None = None,
         now_provider: Callable[[], datetime] | None = None,
-        auth_settings: Settings | None = None,
     ):
         """Инициализировать Registration сервис."""
         super().__init__(
             auth_repo=auth_repo,
+            auth_settings=auth_settings,
             session_store=session_store,
             session_ttl_seconds=session_ttl_seconds,
             google_oauth_state_ttl_seconds=google_oauth_state_ttl_seconds,
-            auth_settings=auth_settings,
             http_client=http_client,
             google_oauth_client_factory=google_oauth_client_factory,
             state_token_provider=state_token_provider,

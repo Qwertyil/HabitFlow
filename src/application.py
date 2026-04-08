@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
-from src.config import Settings
+from src.config import Settings, load_settings
 from src.exception_handlers import register_exception_handlers
 from src.lifespan import lifespan
 from src.middleware.security_headers import register_security_headers_middleware
@@ -16,7 +16,7 @@ from src.routers.themes import router as themes_router
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
-    app_settings = settings if settings is not None else Settings()
+    app_settings = settings if settings is not None else load_settings()
     app = FastAPI(
         title="HabitFlow",
         description="Трекер привычек и задач",

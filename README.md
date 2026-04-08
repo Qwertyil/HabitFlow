@@ -201,6 +201,14 @@ make compose-up
 make migration
 ```
 
+To run Docker with another profile, point `ENV_FILE` at a different base dotenv file:
+
+```bash
+cp .env.example .env.prod
+ENV_FILE=.env.prod make compose-up
+ENV_FILE=.env.prod make migration
+```
+
 Application URL: `http://localhost:8001`
 PostgreSQL: `localhost:5430`
 Redis: `localhost:6370`
@@ -212,6 +220,9 @@ Create `.env` from the example file:
 ```bash
 cp .env.example .env
 ```
+
+If you want multiple local profiles, create files such as `.env.dev` or `.env.test` and
+run `make` with `ENV_FILE=.env.dev` or `ENV_FILE=.env.test`.
 
 Install dependencies:
 
@@ -308,7 +319,10 @@ The default `make test` command runs pytest with coverage and enforces a minimum
 Notes:
 
 - the table reflects the values shipped in `.env.example`; some settings are still required by code if you remove them from the file;
+- `ENV_FILE` is chosen outside the dotenv file, for example `ENV_FILE=.env.test make test`;
+- `make` uses `python-dotenv` for app/test commands and passes the same `ENV_FILE` to Docker Compose so the selected profile stays in sync;
 - `.env.docker` overrides `POSTGRES_HOST`, `POSTGRES_PORT`, `REDIS_HOST`, and `REDIS_PORT` for the app container;
+- `APP_PORT` is the host-side published port, while `CONTAINER_APP_PORT` is the internal port the container listens on;
 - if `DEBUG=False`, `UI_SESSION_SECRET_KEY` must be set explicitly;
 - Google OAuth is disabled unless all required `GOOGLE_OAUTH_*` variables are provided;
 - quote refresh scheduling uses `REFILL_INTERVAL_HOURS` from config;
