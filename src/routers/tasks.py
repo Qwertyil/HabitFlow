@@ -18,7 +18,7 @@ from src.schemas.tasks import (
     TaskUpdateAPI,
 )
 from src.services import TaskService
-from src.utils import error_context_updater, templates
+from src.web import error_context_updater, templates
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 _WRITE_ROUTE_DEPENDENCIES = [Depends(require_csrf)]

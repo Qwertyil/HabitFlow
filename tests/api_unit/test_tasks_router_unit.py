@@ -19,7 +19,8 @@ from src.exceptions import TaskNotFound
 from src.main import app
 from src.schemas.tasks import TaskInDB
 from src.services.tasks import PRIORITY_IDS
-from src.utils import PUBLIC_ERRORS, ensure_csrf_token
+from src.exception_handlers import PUBLIC_ERRORS
+from src.csrf import ensure_csrf_token
 from tests.api_unit.assertions import (
     assert_html_response,
     assert_json_detail,

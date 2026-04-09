@@ -18,7 +18,7 @@ from src.schemas.statistics import (
     TaskStatisticsPage,
     ThemeStatisticsPage,
 )
-from src.utils import ensure_csrf_token
+from src.csrf import ensure_csrf_token
 from tests.api_unit.assertions import assert_html_response
 from tests.helpers import async_test_client
 

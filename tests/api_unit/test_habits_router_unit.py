@@ -18,7 +18,7 @@ from src.dependencies import (
 from src.exceptions import HabitNotFound
 from src.main import app
 from src.schemas.habits import HabitCompletionResult
-from src.utils import ensure_csrf_token
+from src.csrf import ensure_csrf_token
 from tests.api_unit.assertions import (
     assert_html_response,
     assert_json_detail,
@@ -26,7 +26,7 @@ from tests.api_unit.assertions import (
     assert_redirect,
 )
 from tests.helpers import async_test_client, make_auth_user, with_csrf_form
-from src.utils import PUBLIC_ERRORS
+from src.exception_handlers import PUBLIC_ERRORS
 
 pytestmark = pytest.mark.asyncio
 

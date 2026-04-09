@@ -8,11 +8,12 @@ from src.dependencies import (
     get_statistics_service,
     get_theme_service,
 )
+from src.schemas import Stats
 from src.schemas.auth import AuthUser
 from src.schemas.statistics import StatisticsPageData, StatsRange
 from src.services.statistics import StatisticsService
 from src.services.themes import ThemeService
-from src.utils import build_template_context, get_stats_from_page_data, templates
+from src.web import build_template_context, templates
 
 router = APIRouter(tags=["Statistics"])
 
@@ -35,6 +36,18 @@ async def get_stats_page_context(
         theme_service=theme_service,
         statistics=get_stats_from_page_data(page_data),
         current_user=current_user,
+    )
+
+
+def get_stats_from_page_data(page_data: StatisticsPageData) -> Stats:
+    return Stats(
+        total_tasks=page_data.tasks.total,
+        active_tasks=page_data.tasks.active,
+        total_habits=page_data.habits.total,
+        success_rate=page_data.habits.success_rate_today,
+        active_habits=page_data.habits.active,
+        due_habits_today=page_data.habits.due_today,
+        completed_habits_today=page_data.habits.completed_today,
     )
 
 

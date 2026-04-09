@@ -23,7 +23,7 @@ from src.services import HabitService, StatisticsService, TaskService, ThemeServ
 from src.services.auth import LoginService, OAuthService, RegistrationService
 from src.services.quotes import QuoteService
 from src.services.zen_quote import ZenQuotesService
-from src.utils import build_template_context
+from src.web import build_template_context
 
 _AUTH_LOGIN_PATH = "/auth/login"
 

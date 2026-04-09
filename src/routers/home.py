@@ -7,7 +7,7 @@ from fastapi.responses import HTMLResponse
 from src.dependencies import add_quote_to_context, get_habit_service, get_task_service
 from src.services.habits import HabitService
 from src.services.tasks import TaskService
-from src.utils import templates
+from src.web import templates
 
 router = APIRouter()
 

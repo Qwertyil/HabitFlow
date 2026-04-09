@@ -11,7 +11,12 @@ from pydantic import ValidationError
 from pyrate_limiter import Duration, Limiter, Rate  # type: ignore[attr-defined]
 
 from src.config import Settings
-from src.csrf import csrf_error_message, read_request_payload, validate_csrf
+from src.csrf import (
+    csrf_error_message,
+    ensure_csrf_token,
+    read_request_payload,
+    validate_csrf,
+)
 from src.dependencies import (
     get_current_user,
     get_login_service,
@@ -32,7 +37,7 @@ from src.exceptions import (
 )
 from src.schemas import AuthLogin, AuthRegister, AuthUser
 from src.services.auth import LoginService, OAuthService, RegistrationService
-from src.utils import ensure_csrf_token, get_user_display_name, templates
+from src.web import get_user_display_name, templates
 
 # ---------- helpers ----------
 

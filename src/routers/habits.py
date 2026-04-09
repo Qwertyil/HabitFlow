@@ -21,7 +21,7 @@ from src.schemas import (
 )
 from src.schemas.habits import HabitCreateAPI
 from src.services.habits import HabitService
-from src.utils import error_context_updater, templates
+from src.web import error_context_updater, templates
 
 router = APIRouter(prefix="/habits", tags=["Habits"])
 _WRITE_ROUTE_DEPENDENCIES = [Depends(require_csrf)]

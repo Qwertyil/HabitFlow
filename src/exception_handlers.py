@@ -3,9 +3,36 @@ import logging
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 
-from src.utils import get_public_error_message, templates
+from src.web import templates
 
 logger = logging.getLogger(__name__)
+
+
+PUBLIC_ERRORS = {
+    400: "Некорректный запрос.",
+    401: "Необходимо войти в систему.",
+    403: "У вас нет доступа к этой странице.",
+    404: "Страница не найдена.",
+    405: "Метод запроса не поддерживается.",
+    408: "Время ожидания ответа истекло.",
+    409: "Конфликт данных.",
+    422: "Некорректно заполнены данные.",
+    429: "Слишком много запросов. Попробуйте позже.",
+    500: "Что-то пошло не так. Попробуйте ещё раз позже.",
+    502: "Сервис временно недоступен.",
+    503: "Сервис временно недоступен.",
+    504: "Сервис не ответил вовремя.",
+}
+
+
+def get_public_error_message(status_code: int, detail: object = None) -> str:
+    if status_code in PUBLIC_ERRORS:
+        return PUBLIC_ERRORS[status_code]
+
+    if 400 <= status_code < 500:
+        return "Ошибка запроса."
+
+    return "Что-то пошло не так. Попробуйте ещё раз позже."
 
 
 def _render_error_response(
@@ -15,7 +42,7 @@ def _render_error_response(
     public_detail: str,
 ) -> Response:
     if "text/html" in request.headers.get("accept", ""):
-        from src.utils import ensure_csrf_token
+        from src.csrf import ensure_csrf_token
 
         is_login_page = request.url.path == "/auth/login"
         primary_url = "/auth/login" if is_login_page else "/"

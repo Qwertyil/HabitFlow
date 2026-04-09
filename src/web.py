@@ -1,37 +1,19 @@
 import os
 import re
-import secrets
 from typing import Any
 from uuid import UUID
 
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
 
+from src.csrf import ensure_csrf_token
 from src.schemas import Stats, ThemeResponse
 from src.schemas.auth import AuthUser
-from src.schemas.statistics import StatisticsPageData
 from src.services.themes import ThemeService
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 templates_dir = os.path.join(current_dir, "templates")
 templates = Jinja2Templates(directory=templates_dir)
-
-
-PUBLIC_ERRORS = {
-    400: "Некорректный запрос.",
-    401: "Необходимо войти в систему.",
-    403: "У вас нет доступа к этой странице.",
-    404: "Страница не найдена.",
-    405: "Метод запроса не поддерживается.",
-    408: "Время ожидания ответа истекло.",
-    409: "Конфликт данных.",
-    422: "Некорректно заполнены данные.",
-    429: "Слишком много запросов. Попробуйте позже.",
-    500: "Что-то пошло не так. Попробуйте ещё раз позже.",
-    502: "Сервис временно недоступен.",
-    503: "Сервис временно недоступен.",
-    504: "Сервис не ответил вовремя.",
-}
 
 
 def get_user_display_name(user: AuthUser | None) -> str | None:
@@ -46,28 +28,6 @@ def get_user_display_name(user: AuthUser | None) -> str | None:
     if not chunks:
         return local_part
     return " ".join(chunk.capitalize() for chunk in chunks[:2])
-
-
-def ensure_csrf_token(request: Request) -> str:
-    token = request.session.get("csrf_token")
-    if isinstance(token, str) and token:
-        return token
-
-    token = secrets.token_urlsafe(32)
-    request.session["csrf_token"] = token
-    return token
-
-
-def get_stats_from_page_data(page_data: StatisticsPageData) -> Stats:
-    return Stats(
-        total_tasks=page_data.tasks.total,
-        active_tasks=page_data.tasks.active,
-        total_habits=page_data.habits.total,
-        success_rate=page_data.habits.success_rate_today,
-        active_habits=page_data.habits.active,
-        due_habits_today=page_data.habits.due_today,
-        completed_habits_today=page_data.habits.completed_today,
-    )
 
 
 async def build_template_context(
@@ -126,13 +86,3 @@ async def build_template_context(
 def error_context_updater(context: dict[Any, Any], e: str) -> dict[Any, Any]:
     context.update({"message_type": "error", "title": "Ошибка", "message": str(e)})
     return context
-
-
-def get_public_error_message(status_code: int, detail: object = None) -> str:
-    if status_code in PUBLIC_ERRORS:
-        return PUBLIC_ERRORS[status_code]
-
-    if 400 <= status_code < 500:
-        return "Ошибка запроса."
-
-    return "Что-то пошло не так. Попробуйте ещё раз позже."

@@ -17,7 +17,8 @@ from src.dependencies import (
 )
 from src.main import app
 from src.schemas.themes import ThemeCreate, ThemeInDB, ThemeUpdate
-from src.utils import PUBLIC_ERRORS, ensure_csrf_token
+from src.exception_handlers import PUBLIC_ERRORS
+from src.csrf import ensure_csrf_token
 from tests.api_unit.assertions import (
     assert_html_response,
     assert_json_detail,

@@ -13,7 +13,7 @@ from src.dependencies import (
 from src.schemas import ThemeCreate, ThemeUpdate
 from src.services import ThemeService
 from src.services.themes import THEME_COLORS
-from src.utils import templates
+from src.web import templates
 
 router = APIRouter(prefix="/themes", tags=["Themes"])
 _WRITE_ROUTE_DEPENDENCIES = [Depends(require_csrf)]

@@ -12,7 +12,7 @@ from src.schemas.statistics import (
     TaskStatisticsPage,
 )
 from src.dependencies import get_stats, get_template_context
-from src.utils import get_stats_from_page_data
+from src.routers.stats import get_stats_from_page_data
 
 
 class _DummyTaskStats:

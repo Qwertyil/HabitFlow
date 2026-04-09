@@ -91,3 +91,13 @@ async def get_submitted_csrf_token(request: Request) -> object | None:
 async def require_csrf(request: Request) -> None:
     submitted_token = await get_submitted_csrf_token(request)
     validate_csrf(request, submitted_token)
+
+
+def ensure_csrf_token(request: Request) -> str:
+    token = request.session.get("csrf_token")
+    if isinstance(token, str) and token:
+        return token
+
+    token = secrets.token_urlsafe(32)
+    request.session["csrf_token"] = token
+    return token
