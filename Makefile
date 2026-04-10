@@ -82,7 +82,7 @@ compose-runtime-logs:
 	$(COMPOSE_RUNTIME) logs -f
 
 migration:
-	$(COMPOSE) exec app alembic upgrade head
+	$(COMPOSE) run --rm app alembic upgrade head
 
 psql:
 	$(COMPOSE) exec postgres sh -c 'psql "dbname=$$POSTGRES_DB user=$$POSTGRES_USER password=$$POSTGRES_PASSWORD"'

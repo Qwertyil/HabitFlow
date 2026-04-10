@@ -101,3 +101,18 @@ def test_make_compose_runtime_up_uses_base_compose_only_in_dry_run(
         in result.stdout
     )
     assert "docker-compose.dev.yml" not in result.stdout
+
+
+def test_make_migration_uses_one_off_app_container_in_dry_run(tmp_path: Path) -> None:
+    env_file = tmp_path / ".env.test"
+    env_file.write_text("APP_PORT=9123\nDEBUG=False\n", encoding="utf-8")
+
+    result = _run_make("-n", "migration", f"ENV_FILE={env_file}")
+
+    assert result.returncode == 0
+    assert (
+        "docker compose --env-file "
+        f"{env_file} -f docker-compose.yml -f docker-compose.dev.yml "
+        "run --rm app alembic upgrade head" in result.stdout
+    )
+    assert " exec app " not in result.stdout
