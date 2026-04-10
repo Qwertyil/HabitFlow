@@ -1,3 +1,19 @@
+x-app-service: &app-service
+  build:
+    context: .
+    dockerfile: Dockerfile
+  env_file:
+    - ${ENV_FILE:-.env}
+    - .env.docker
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  networks:
+    - app_network
+
 services:
   postgres:
     image: postgres:17-alpine
@@ -12,8 +28,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "${POSTGRES_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -23,8 +37,6 @@ services:
     container_name: redis_db
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
-    ports:
-      - "${REDIS_PORT}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -35,25 +47,20 @@ services:
     networks:
       - app_network
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    env_file:
-      - ${ENV_FILE:-.env}
-      - .env.docker
+    <<: *app-service
     container_name: fastapi_app
-    restart: unless-stopped
+    environment:
+      UVICORN_RELOAD: "false"
     ports:
       - "${APP_PORT:-8010}:${CONTAINER_APP_PORT:-8000}"
-    volumes:
-      - ./src:/app/src
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - app_network
+  quote-worker:
+    <<: *app-service
+    container_name: quote_worker
+    environment:
+      UVICORN_RELOAD: "false"
+    entrypoint: ["python", "-m", "src.run_quote_worker"]
+    healthcheck:
+      disable: true
 
 volumes:
   postgres_data:

@@ -32,7 +32,7 @@ HabitFlow — web-first FastAPI-приложение для личного уп�
 - опциональный вход через Google OAuth;
 - CSRF-защита для state-changing web-запросов;
 - rate limiting для auth-роутов;
-- фоновое обновление цитат через APScheduler и ZenQuotes;
+- выделенный worker для обновления цитат через APScheduler и ZenQuotes;
 - health/readiness эндпоинты и централизованные security headers на уровне приложения;
 - тесты уровней `unit`, `api_unit`, `integration`;
 - миграции Alembic и запуск через Docker / Docker Compose.
@@ -56,7 +56,7 @@ HabitFlow — web-first FastAPI-приложение для личного уп�
 - FastAPI;
 - SQLAlchemy 2.x async + PostgreSQL;
 - Redis для auth session storage;
-- APScheduler + `httpx` для фонового обновления цитат;
+- отдельный quote worker на APScheduler + `httpx` для фонового обновления цитат;
 - application factory с lifespan-managed shared resources в `app.state`;
 - `SessionMiddleware` для UI session;
 - централизованные exception handlers и security headers middleware;

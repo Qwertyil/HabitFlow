@@ -53,7 +53,7 @@ For a hiring manager, the useful signal is less "there is a FastAPI app here" an
 - **Separate UI session and auth session.**
   Keeps CSRF tokens and temporary browser state away from authentication state, which makes the security model clearer and easier to evolve.
 - **APScheduler instead of a queue stack.**
-  Good enough for lightweight recurring quote refresh jobs without introducing Celery, workers, or a broker for a single-service portfolio app.
+  Good enough for lightweight recurring quote refresh jobs in a dedicated worker without introducing Celery or a broker stack.
 - **Server-rendered web UI with backend-owned flows.**
   Less frontend complexity, faster iteration on auth and CRUD behavior, and more room to focus the project on backend decisions than a frontend-heavy architecture would provide here.
 - **Layered architecture over "FastAPI everything in routers".**
@@ -70,7 +70,7 @@ For a hiring manager, the useful signal is less "there is a FastAPI app here" an
 - Habit scheduling engine with multiple recurrence types
 - Aggregated statistics page with period-based calculations
 - Google OAuth login flow
-- Background quote refresh job on application startup and scheduled intervals
+- Dedicated quote refresh worker with immediate sync and scheduled intervals
 - Unit, API-unit, and integration tests
 - Strict static checks with Ruff and mypy
 
@@ -110,7 +110,7 @@ For a hiring manager, the useful signal is less "there is a FastAPI app here" an
 - **FastAPI** for explicit request handling, dependency injection, and async support.
 - **PostgreSQL** as the primary relational store for application data and reporting queries.
 - **Redis** for session-backed authentication state and invalidation.
-- **APScheduler** for lightweight recurring background jobs without adding a queue broker.
+- **APScheduler** inside a standalone worker for lightweight recurring background jobs without adding a queue broker.
 - **Layered architecture** to keep transport, business logic, and persistence concerns separated.
 
 ## Architecture
@@ -123,10 +123,11 @@ Browser
            -> PostgreSQL
            -> Redis
 
-APScheduler
-  -> services
-     -> ZenQuotes API
-     -> PostgreSQL
+Quote worker
+  -> APScheduler
+     -> services
+        -> ZenQuotes API
+        -> PostgreSQL
 ```
 
 ### Request Flow
@@ -185,7 +186,7 @@ APScheduler
 
 ## Run
 
-### Option 1. Docker
+### Option 1. Docker Compose Dev Stack
 
 ```bash
 git clone https://github.com/Qwertyil/HabitFlow.git
@@ -194,14 +195,21 @@ cp .env.example .env
 cp .env.docker.example .env.docker
 ```
 
-Then run:
+Then run the local development stack:
 
 ```bash
 make compose-up
 make migration
 ```
 
-To run Docker with another profile, point `ENV_FILE` at a different base dotenv file:
+This starts:
+
+- the web app on `http://localhost:8001`;
+- the quote worker alongside it;
+- PostgreSQL on `localhost:5430`;
+- Redis on `localhost:6370`.
+
+To run the same dev stack with another profile, point `ENV_FILE` at a different base dotenv file:
 
 ```bash
 cp .env.example .env.prod
@@ -209,9 +217,15 @@ ENV_FILE=.env.prod make compose-up
 ENV_FILE=.env.prod make migration
 ```
 
-Application URL: `http://localhost:8001`
-PostgreSQL: `localhost:5430`
-Redis: `localhost:6370`
+### Option 1b. Runtime Compose Baseline
+
+Use the runtime-only stack when you want the deploy-like Compose file without dev bind mounts or published Postgres/Redis ports:
+
+```bash
+make compose-runtime-up
+```
+
+The runtime baseline publishes only the web app HTTP port and starts both `app` and `quote-worker`.
 
 ### Option 2. Local Development
 
@@ -233,7 +247,7 @@ poetry install
 Start infrastructure only:
 
 ```bash
-docker compose up -d postgres redis
+make infra-up
 ```
 
 Apply migrations:
@@ -242,10 +256,16 @@ Apply migrations:
 poetry run alembic upgrade head
 ```
 
-Run the app:
+Run the web app in one terminal:
 
 ```bash
 make run
+```
+
+Run the quote worker in a second terminal:
+
+```bash
+make worker-run
 ```
 
 Local URL: `http://localhost:8001`
@@ -316,7 +336,7 @@ The default `make test` command runs pytest with coverage and enforces a minimum
 | `GOOGLE_OAUTH_CLIENT_SECRET` | Google OAuth client secret | empty |
 | `GOOGLE_OAUTH_REDIRECT_URI` | Google OAuth callback URL | `http://localhost:8001/auth/google/callback` |
 | `ZENQUOTES_API_URL` | quotes provider URL | `https://zenquotes.io/api/quotes` |
-| `REFILL_INTERVAL_HOURS` | quote refresh interval for APScheduler | `1` |
+| `REFILL_INTERVAL_HOURS` | quote refresh interval for the standalone quote worker scheduler | `1` |
 | `API_DOCS_ENABLED` | enables `/docs`, `/redoc`, and `/openapi.json` | `False` |
 | `LOG_LEVEL` | explicit logging level override | `WARNING` |
 | `DEBUG` | debug mode | `True` |
@@ -326,19 +346,21 @@ Notes:
 - the table reflects the values shipped in `.env.example`; some settings are still required by code if you remove them from the file;
 - `ENV_FILE` is chosen outside the dotenv file, for example `ENV_FILE=.env.test make test`;
 - `make` uses `python-dotenv` for app/test commands and passes the same `ENV_FILE` to Docker Compose so the selected profile stays in sync;
-- `.env.docker` overrides `POSTGRES_HOST`, `POSTGRES_PORT`, `REDIS_HOST`, and `REDIS_PORT` for the app container;
+- `.env.docker` overrides `POSTGRES_HOST`, `POSTGRES_PORT`, `REDIS_HOST`, and `REDIS_PORT` for Dockerized app and worker containers;
 - `APP_PORT` is the host-side published port, while `CONTAINER_APP_PORT` is the internal port the container listens on;
 - if `DEBUG=False`, `UI_SESSION_SECRET_KEY` must be set explicitly;
 - Google OAuth is disabled unless all required `GOOGLE_OAUTH_*` variables are provided;
-- quote refresh scheduling uses `REFILL_INTERVAL_HOURS` from config;
+- quote refresh scheduling uses `REFILL_INTERVAL_HOURS` from config and runs only in the standalone worker process;
 - `/docs`, `/redoc`, and `/openapi.json` are disabled by default and appear only when `API_DOCS_ENABLED=true`;
 - `/healthz/live` and `/healthz/ready` are always available for liveness/readiness checks;
+- `make compose-up` uses `docker-compose.yml` plus `docker-compose.dev.yml`, while `make compose-runtime-up` uses only `docker-compose.yml`;
 - `Make` is optional because all commands can also be run manually.
 
 ## Make Commands
 
 ```bash
 make run
+make worker-run
 make test
 make lint
 make format
@@ -352,6 +374,9 @@ make infra-logs
 make compose-up
 make compose-down
 make compose-logs
+make compose-runtime-up
+make compose-runtime-down
+make compose-runtime-logs
 make migration
 make psql
 ```

@@ -1,8 +1,9 @@
 ENV_FILE ?= .env
 
-ENV_REQUIRED_GOALS := run test test-pre-push check \
+ENV_REQUIRED_GOALS := run worker-run test test-pre-push check \
 	infra-up infra-down infra-restart infra-logs \
 	compose-up compose-down compose-logs \
+	compose-runtime-up compose-runtime-down compose-runtime-logs \
 	migration psql
 ACTIVE_GOALS := $(if $(MAKECMDGOALS),$(MAKECMDGOALS),run)
 
@@ -12,17 +13,22 @@ $(error ENV_FILE '$(ENV_FILE)' does not exist)
 endif
 endif
 
-.PHONY: run test test-pre-push lint format typecheck pre-commit check \
+.PHONY: run worker-run test test-pre-push lint format typecheck pre-commit check \
 	infra-up infra-down infra-restart infra-logs \
 	app-up app-down app-restart app-logs \
 	compose-up compose-down compose-logs \
+	compose-runtime-up compose-runtime-down compose-runtime-logs \
 	migration psql
 
 DOTENV_RUN = poetry run -- dotenv -f $(ENV_FILE) run --
-COMPOSE = docker compose --env-file $(ENV_FILE)
+COMPOSE_RUNTIME = docker compose --env-file $(ENV_FILE) -f docker-compose.yml
+COMPOSE = $(COMPOSE_RUNTIME) -f docker-compose.dev.yml
 
 run:
 	$(DOTENV_RUN) python -m src.run_app
+
+worker-run:
+	$(DOTENV_RUN) python -m src.run_quote_worker
 
 test:
 	$(DOTENV_RUN) env PYTHONPATH=. poetry run pytest -x tests -v --junitxml=junit.xml --cov=src --cov-branch --cov-report=term --cov-report=xml:coverage.xml --cov-report=html:htmlcov --cov-fail-under=80
@@ -65,6 +71,15 @@ compose-down:
 
 compose-logs:
 	$(COMPOSE) logs -f
+
+compose-runtime-up:
+	$(COMPOSE_RUNTIME) up -d --build
+
+compose-runtime-down:
+	$(COMPOSE_RUNTIME) down
+
+compose-runtime-logs:
+	$(COMPOSE_RUNTIME) logs -f
 
 migration:
 	$(COMPOSE) exec app alembic upgrade head

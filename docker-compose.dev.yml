@@ -1,0 +1,19 @@
+services:
+  postgres:
+    ports:
+      - "${POSTGRES_PORT}:5432"
+
+  redis:
+    ports:
+      - "${REDIS_PORT}:6379"
+
+  app:
+    environment:
+      UVICORN_RELOAD: "true"
+    volumes:
+      - ./src:/app/src
+
+  quote-worker:
+    entrypoint: ["python", "-m", "watchfiles", "--filter", "python", "src.run_quote_worker:main"]
+    volumes:
+      - ./src:/app/src
