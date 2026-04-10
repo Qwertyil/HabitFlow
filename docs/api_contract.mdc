@@ -77,6 +77,33 @@ alwaysApply: false
   - insights;
   - sidebar-статистику в общем шаблонном контексте.
 
+### 4.3 Health endpoints
+
+#### `GET /healthz/live`
+- `200 application/json`.
+- Не требует авторизации.
+- Возвращает:
+```json
+{
+  "status": "ok"
+}
+```
+
+#### `GET /healthz/ready`
+- `200 application/json` если PostgreSQL и Redis доступны.
+- `503 application/json`, если хотя бы одна зависимость недоступна.
+- Не требует авторизации.
+- Возвращает:
+```json
+{
+  "status": "ok|degraded",
+  "checks": {
+    "postgres": "ok|error",
+    "redis": "ok|error"
+  }
+}
+```
+
 ## 5. Auth
 
 ### 5.1 Таблица маршрутов
@@ -208,7 +235,6 @@ alwaysApply: false
 - Ошибки:
   - `404`, если тема не найдена;
   - `500` при внутреннем сбое.
-- Текущее фактическое поведение: detail у `404` по legacy-сообщению может быть `"Habit not found"`.
 
 ## 7. Tasks
 

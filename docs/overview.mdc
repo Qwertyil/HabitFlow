@@ -22,7 +22,7 @@ HabitFlow — web-first FastAPI-приложение для личного уп�
 Основной интерфейс проекта — серверно-рендеренные страницы (`HTML + Jinja2 + vanilla JS`) с точечными JSON-эндпоинтами для обновлений из браузера. Отдельный публичный JSON API под `/api/*` сейчас не реализован.
 
 ## 3. Текущий продуктовый скоуп
-На 25 марта 2026 в проекте реализовано:
+На 10 апреля 2026 в проекте реализовано:
 - CRUD для `themes`, `tasks`, `habits`;
 - owner-scoped доступ к пользовательским данным;
 - статистическая страница `/stats` по задачам, привычкам и темам;
@@ -57,7 +57,9 @@ HabitFlow — web-first FastAPI-приложение для личного уп�
 - SQLAlchemy 2.x async + PostgreSQL;
 - Redis для auth session storage;
 - APScheduler + `httpx` для фонового обновления цитат;
+- application factory с lifespan-managed shared resources в `app.state`;
 - `SessionMiddleware` для UI session;
+- централизованные exception handlers и security headers middleware;
 - Jinja2 и vanilla JS;
 - pytest, Ruff, mypy.
 

@@ -267,6 +267,9 @@ Useful pages:
 - `/habits`
 - `/auth/login`
 - `/auth/register`
+- `/healthz/live`
+- `/healthz/ready`
+- `/docs` when `API_DOCS_ENABLED=true`
 
 Run tests:
 
@@ -314,6 +317,8 @@ The default `make test` command runs pytest with coverage and enforces a minimum
 | `GOOGLE_OAUTH_REDIRECT_URI` | Google OAuth callback URL | `http://localhost:8001/auth/google/callback` |
 | `ZENQUOTES_API_URL` | quotes provider URL | `https://zenquotes.io/api/quotes` |
 | `REFILL_INTERVAL_HOURS` | quote refresh interval for APScheduler | `1` |
+| `API_DOCS_ENABLED` | enables `/docs`, `/redoc`, and `/openapi.json` | `False` |
+| `LOG_LEVEL` | explicit logging level override | `WARNING` |
 | `DEBUG` | debug mode | `True` |
 
 Notes:
@@ -326,6 +331,8 @@ Notes:
 - if `DEBUG=False`, `UI_SESSION_SECRET_KEY` must be set explicitly;
 - Google OAuth is disabled unless all required `GOOGLE_OAUTH_*` variables are provided;
 - quote refresh scheduling uses `REFILL_INTERVAL_HOURS` from config;
+- `/docs`, `/redoc`, and `/openapi.json` are disabled by default and appear only when `API_DOCS_ENABLED=true`;
+- `/healthz/live` and `/healthz/ready` are always available for liveness/readiness checks;
 - `Make` is optional because all commands can also be run manually.
 
 ## Make Commands
