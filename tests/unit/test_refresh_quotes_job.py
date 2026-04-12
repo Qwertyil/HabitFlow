@@ -113,6 +113,13 @@ async def test_refresh_quotes_commits_after_success(
     assert captured_factory_args["http_client"] is http_client
     assert captured_factory_args["settings"] is settings
     assert "Quotes batch refreshed successfully" in caplog.text
+    success_records = [
+        record
+        for record in caplog.records
+        if record.name == "src.jobs.refresh_quotes"
+        and getattr(record, "event", None) == "quote_refresh_succeeded"
+    ]
+    assert len(success_records) == 1
 
 
 @pytest.mark.asyncio
@@ -144,12 +151,20 @@ async def test_refresh_quotes_logs_and_skips_commit_after_failure(
 
     assert session.commit_calls == 0
     assert session_maker.calls == 1
-    assert "Failed to refresh quotes batch" in caplog.text
+    assert "Quotes batch refresh failed" in caplog.text
+    failure_records = [
+        record
+        for record in caplog.records
+        if record.name == "src.jobs.refresh_quotes"
+        and getattr(record, "event", None) == "quote_refresh_failed"
+    ]
+    assert len(failure_records) == 1
 
 
 @pytest.mark.asyncio
 async def test_refresh_quotes_skips_work_while_running_tests(
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     session = FakeSession()
     session_maker = FakeSessionMaker(session)
@@ -166,6 +181,8 @@ async def test_refresh_quotes_skips_work_while_running_tests(
         fail_if_called,
     )
 
+    caplog.set_level(logging.DEBUG, logger="src.jobs.refresh_quotes")
+
     try:
         await refresh_quotes(
             settings=_settings(testing=True),
@@ -178,3 +195,10 @@ async def test_refresh_quotes_skips_work_while_running_tests(
     assert build_quote_service_called is False
     assert session_maker.calls == 0
     assert session.commit_calls == 0
+    skip_records = [
+        record
+        for record in caplog.records
+        if record.name == "src.jobs.refresh_quotes"
+        and getattr(record, "event", None) == "quote_refresh_skipped_for_tests"
+    ]
+    assert len(skip_records) == 1

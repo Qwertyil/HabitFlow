@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import logging
 from types import TracebackType
 
 import httpx
@@ -141,7 +142,7 @@ async def test_run_quote_worker_bootstraps_resources_and_shuts_them_down() -> No
         refresh_job=fake_refresh_job,
     )
 
-    assert engine_factory_calls == [(settings.DATABASE_URL_asyncpg, settings.DEBUG)]
+    assert engine_factory_calls == [(settings.DATABASE_URL_asyncpg, False)]
     assert http_client.entered is True
     assert http_client.exited is True
     assert scheduler.started is True
@@ -155,6 +156,47 @@ async def test_run_quote_worker_bootstraps_resources_and_shuts_them_down() -> No
     assert refresh_calls[0]["settings"] is settings
     assert refresh_calls[0]["http_client"] is http_client
     assert "session_maker" in refresh_calls[0]
+
+
+@pytest.mark.asyncio
+async def test_run_quote_worker_emits_lifecycle_events(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    settings = _settings(interval_hours=3)
+    scheduler = FakeScheduler()
+    http_client = FakeHttpClient()
+    engine = FakeEngine()
+    stop_event = FakeStopEvent()
+
+    def fake_engine_factory(url: str, *, echo: bool) -> FakeEngine:
+        assert url == settings.DATABASE_URL_asyncpg
+        assert echo is False
+        return engine
+
+    async def fake_refresh_job(**_: object) -> None:
+        return None
+
+    caplog.set_level(logging.INFO, logger="src.quote_worker")
+
+    await run_quote_worker(
+        settings=settings,
+        stop_event=stop_event,  # type: ignore[arg-type]
+        scheduler_factory=lambda: scheduler,  # type: ignore[arg-type]
+        http_client_factory=lambda: http_client,
+        engine_factory=fake_engine_factory,  # type: ignore[arg-type]
+        refresh_job=fake_refresh_job,
+    )
+
+    events = [
+        record.event for record in caplog.records if record.name == "src.quote_worker"
+    ]
+    assert events == [
+        "quote_worker_starting",
+        "quote_worker_scheduler_started",
+        "quote_worker_waiting_for_shutdown",
+        "quote_worker_scheduler_stopping",
+        "quote_worker_stopping",
+    ]
 
 
 def test_run_quote_worker_main_bootstraps_shared_logging(

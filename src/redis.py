@@ -61,10 +61,22 @@ class RedisAdapter:
             except (RedisError, ConnectionError) as e:
                 if attempt == self._retry_attempts - 1:
                     logger.error(
-                        f"Failed to connect to Redis after {self._retry_attempts} attempts"
+                        "Redis connection retries exhausted",
+                        extra={
+                            "event": "redis_connection_retries_exhausted",
+                            "attempts": self._retry_attempts,
+                        },
                     )
                     raise
-                logger.warning(f"Redis connection attempt {attempt + 1} failed: {e!s}")
+                logger.warning(
+                    "Redis connection attempt failed",
+                    extra={
+                        "event": "redis_connection_retry",
+                        "attempt": attempt + 1,
+                        "attempts": self._retry_attempts,
+                        "error": str(e),
+                    },
+                )
                 await asyncio.sleep(self._retry_delay)
         raise RuntimeError("Unexpected end of connection attempts")
 
@@ -146,7 +158,13 @@ class RedisAdapter:
             try:
                 await self._redis.aclose()
             except Exception as e:
-                logger.warning(f"Error closing Redis connection: {e!s}")
+                logger.warning(
+                    "Redis connection close failed",
+                    extra={
+                        "event": "redis_close_failed",
+                        "error": str(e),
+                    },
+                )
             finally:
                 self._redis = None
 

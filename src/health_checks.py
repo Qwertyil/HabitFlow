@@ -14,7 +14,13 @@ async def postgres_ready(db_engine: AsyncEngine) -> bool:
             await connection.execute(text("SELECT 1"))
         return True
     except Exception as exc:
-        logger.warning("Readiness check failed for Postgres: %s", exc)
+        logger.warning(
+            "Postgres readiness check failed",
+            extra={
+                "event": "postgres_readiness_failed",
+                "error": str(exc),
+            },
+        )
         return False
 
 
@@ -22,5 +28,11 @@ async def redis_ready(redis: RedisAdapter) -> bool:
     try:
         return await redis.ping_for_healthcheck()
     except Exception as exc:
-        logger.warning("Readiness check failed for Redis: %s", exc)
+        logger.warning(
+            "Redis readiness check failed",
+            extra={
+                "event": "redis_readiness_failed",
+                "error": str(exc),
+            },
+        )
         return False

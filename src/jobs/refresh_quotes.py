@@ -39,7 +39,10 @@ async def refresh_quotes(
     session_maker: async_sessionmaker[AsyncSession],
 ) -> None:
     if settings.TESTING:
-        logger.debug("Skipping quotes refresh while running tests")
+        logger.debug(
+            "Skipping quotes refresh while running tests",
+            extra={"event": "quote_refresh_skipped_for_tests"},
+        )
         return
 
     try:
@@ -52,10 +55,16 @@ async def refresh_quotes(
             await quote_service.refresh_quotes_batch()
             await session.commit()
 
-            logger.info("Quotes batch refreshed successfully")
+            logger.info(
+                "Quotes batch refreshed successfully",
+                extra={"event": "quote_refresh_succeeded"},
+            )
 
     except Exception:
-        logger.exception("Failed to refresh quotes batch")
+        logger.exception(
+            "Quotes batch refresh failed",
+            extra={"event": "quote_refresh_failed"},
+        )
 
 
 async def refresh_quotes_job(app: FastAPI) -> None:

@@ -111,6 +111,6 @@ async def test_lifespan_bootstraps_only_web_resources(
 
     assert http_client.entered is True
     assert http_client.exited is True
-    assert engine_factory_calls == [(app.state.settings.DATABASE_URL_asyncpg, True)]
+    assert engine_factory_calls == [(app.state.settings.DATABASE_URL_asyncpg, False)]
     assert engine.dispose_calls == 1
     assert redis_instances[0].close_calls == 1

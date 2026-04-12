@@ -50,12 +50,34 @@ def schedule_quote_refresh_job(
 
 def _install_shutdown_signal_handlers(stop_event: asyncio.Event) -> None:
     loop = asyncio.get_running_loop()
+
+    def _request_shutdown(signal_name: str) -> None:
+        logger.info(
+            "Shutdown signal received",
+            extra={
+                "event": "quote_worker_shutdown_signal_received",
+                "signal": signal_name,
+            },
+        )
+        stop_event.set()
+
     for signum in (signal.SIGINT, signal.SIGTERM):
         try:
-            loop.add_signal_handler(signum, stop_event.set)
+            loop.add_signal_handler(signum, _request_shutdown, signum.name)
         except NotImplementedError:
-            logger.debug("Signal handlers are not supported on this platform")
+            logger.debug(
+                "Signal handlers are not supported on this platform",
+                extra={"event": "quote_worker_signal_handlers_unsupported"},
+            )
             return
+
+    logger.debug(
+        "Shutdown signal handlers installed",
+        extra={
+            "event": "quote_worker_signal_handlers_installed",
+            "signals": [signal.SIGINT.name, signal.SIGTERM.name],
+        },
+    )
 
 
 async def run_quote_worker(
@@ -70,7 +92,7 @@ async def run_quote_worker(
     worker_settings = settings if settings is not None else load_settings()
     engine = engine_factory(
         worker_settings.DATABASE_URL_asyncpg,
-        echo=worker_settings.DEBUG,
+        echo=False,
     )
     session_maker = async_sessionmaker(engine, expire_on_commit=False)
     scheduler = scheduler_factory()
@@ -82,6 +104,16 @@ async def run_quote_worker(
     scheduler_started = False
 
     try:
+        logger.info(
+            "Quote worker starting",
+            extra={
+                "event": "quote_worker_starting",
+                "refresh_interval_hours": (
+                    worker_settings.REFILL_INTERVAL_HOURS
+                    or _DEFAULT_REFILL_INTERVAL_HOURS
+                ),
+            },
+        )
         async with http_client_factory() as http_client:
             schedule_quote_refresh_job(
                 scheduler,
@@ -92,14 +124,33 @@ async def run_quote_worker(
             )
             scheduler.start()
             scheduler_started = True
+            logger.info(
+                "Quote refresh scheduler started",
+                extra={
+                    "event": "quote_worker_scheduler_started",
+                    "job_id": "refresh_quotes_job",
+                },
+            )
 
             await refresh_job(
                 settings=worker_settings,
                 http_client=http_client,
                 session_maker=session_maker,
             )
+            logger.info(
+                "Quote worker waiting for shutdown signal",
+                extra={"event": "quote_worker_waiting_for_shutdown"},
+            )
             await worker_stop_event.wait()
     finally:
         if scheduler_started:
+            logger.info(
+                "Quote refresh scheduler shutting down",
+                extra={"event": "quote_worker_scheduler_stopping"},
+            )
             scheduler.shutdown(wait=False)
+        logger.info(
+            "Quote worker shutting down",
+            extra={"event": "quote_worker_stopping"},
+        )
         await engine.dispose()

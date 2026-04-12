@@ -116,3 +116,18 @@ def test_configure_logging_is_reentrant_and_applies_context_filter(
     assert payload["component"] == "worker"
     assert payload["event"] == "worker_started"
     assert payload["request_id"] == "req-456"
+
+
+def test_configure_logging_sets_operational_logger_levels() -> None:
+    settings = _settings(LOG_LEVEL="ERROR", SQL_LOG_LEVEL="INFO")
+
+    configure_logging(settings, component="web")
+
+    assert logging.getLogger("sqlalchemy.engine").level == logging.INFO
+    assert logging.getLogger("uvicorn.error").level == logging.ERROR
+    assert logging.getLogger("apscheduler").level == logging.WARNING
+    assert logging.getLogger("httpx").level == logging.WARNING
+
+    uvicorn_access_logger = logging.getLogger("uvicorn.access")
+    assert uvicorn_access_logger.level == logging.WARNING
+    assert uvicorn_access_logger.propagate is False

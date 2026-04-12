@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
         engine = create_async_engine(
             settings.DATABASE_URL_asyncpg,
-            echo=settings.DEBUG,
+            echo=False,
         )
         app.state.db_engine = engine
         app.state.async_session_maker = async_sessionmaker(

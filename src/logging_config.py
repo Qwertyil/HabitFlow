@@ -125,7 +125,33 @@ def configure_logging(settings: Settings, component: str) -> None:
                     "stream": "ext://sys.stdout",
                     "formatter": formatter_name,
                     "filters": ["context"],
-                }
+                },
+                "null": {
+                    "class": "logging.NullHandler",
+                },
+            },
+            "loggers": {
+                "sqlalchemy.engine": {
+                    "level": settings.SQL_LOG_LEVEL,
+                    "propagate": True,
+                },
+                "uvicorn.error": {
+                    "level": settings.default_log_level_name,
+                    "propagate": True,
+                },
+                "uvicorn.access": {
+                    "handlers": ["null"],
+                    "level": "WARNING",
+                    "propagate": False,
+                },
+                "apscheduler": {
+                    "level": "WARNING",
+                    "propagate": True,
+                },
+                "httpx": {
+                    "level": "WARNING",
+                    "propagate": True,
+                },
             },
             "root": {
                 "handlers": ["stdout"],
