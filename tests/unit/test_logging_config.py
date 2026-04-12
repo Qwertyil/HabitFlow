@@ -80,6 +80,25 @@ def test_json_formatter_outputs_single_line_json_record() -> None:
     assert "timestamp" in payload
 
 
+def test_json_formatter_includes_custom_extra_fields() -> None:
+    formatter = JsonEventFormatter()
+    record = _record()
+    record.method = "GET"
+    record.path = "/healthz/live"
+    record.status_code = 200
+    record.duration_ms = 4.25
+    record.client_ip = "127.0.0.1"
+
+    rendered = formatter.format(record)
+
+    payload = json.loads(rendered)
+    assert payload["method"] == "GET"
+    assert payload["path"] == "/healthz/live"
+    assert payload["status_code"] == 200
+    assert payload["duration_ms"] == 4.25
+    assert payload["client_ip"] == "127.0.0.1"
+
+
 def test_configure_logging_is_reentrant_and_applies_context_filter(
     capsys,
 ) -> None:

@@ -3,21 +3,26 @@ from __future__ import annotations
 import json
 import logging
 import logging.config
-from contextvars import ContextVar
+from contextvars import ContextVar, Token
 from datetime import UTC, datetime
 from typing import Any
 
 from src.config import Settings
 
 _request_id_context: ContextVar[str | None] = ContextVar("request_id", default=None)
+_LOG_RECORD_RESERVED_FIELDS = frozenset(logging.makeLogRecord({}).__dict__)
 
 
 def get_request_id() -> str | None:
     return _request_id_context.get()
 
 
-def set_request_id(request_id: str | None) -> None:
-    _request_id_context.set(request_id)
+def set_request_id(request_id: str | None) -> Token[str | None]:
+    return _request_id_context.set(request_id)
+
+
+def reset_request_id(token: Token[str | None]) -> None:
+    _request_id_context.reset(token)
 
 
 class ContextFilter(logging.Filter):
@@ -55,10 +60,30 @@ class BaseEventFormatter(logging.Formatter):
             payload["request_id"] = request_id
         if record.message:
             payload["message"] = record.message
+        for key, value in record.__dict__.items():
+            if (
+                key in _LOG_RECORD_RESERVED_FIELDS
+                or key in payload
+                or key.startswith("_")
+            ):
+                continue
+            payload[key] = self._normalize_extra_value(value)
         return payload
 
     def render(self, payload: dict[str, Any]) -> str:
         raise NotImplementedError
+
+    def _normalize_extra_value(self, value: object) -> object:
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            return value
+        if isinstance(value, dict):
+            return {
+                str(key): self._normalize_extra_value(item)
+                for key, item in value.items()
+            }
+        if isinstance(value, (list, tuple)):
+            return [self._normalize_extra_value(item) for item in value]
+        return str(value)
 
 
 class TextEventFormatter(BaseEventFormatter):

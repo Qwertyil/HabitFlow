@@ -5,6 +5,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from src.config import Settings, load_settings
 from src.exception_handlers import register_exception_handlers
 from src.lifespan import lifespan
+from src.middleware.request_context import register_request_context_middleware
 from src.middleware.security_headers import register_security_headers_middleware
 from src.routers.auth import router as auth_router
 from src.routers.habits import router as habits_router
@@ -49,5 +50,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     register_security_headers_middleware(app)
     register_exception_handlers(app)
+    register_request_context_middleware(app)
 
     return app

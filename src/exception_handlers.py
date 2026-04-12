@@ -49,36 +49,67 @@ def _render_error_response(
         primary_text = "К форме входа" if is_login_page else "На главную"
         primary_icon = "fa-right-to-bracket" if is_login_page else "fa-home"
 
-        return templates.TemplateResponse(
+        return _attach_request_id_header(
             request,
-            "message.html",
-            {
-                "request": request,
-                "current_user": None,
-                "current_user_display_name": None,
-                "title": "Ошибка",
-                "message": public_detail,
-                "message_type": "error",
-                "primary_url": primary_url,
-                "primary_text": primary_text,
-                "primary_icon": primary_icon,
-                "hide_sidebar": True,
-                "csrf_token": ensure_csrf_token(request),
-            },
-            status_code=status_code,
+            templates.TemplateResponse(
+                request,
+                "message.html",
+                {
+                    "request": request,
+                    "current_user": None,
+                    "current_user_display_name": None,
+                    "title": "Ошибка",
+                    "message": public_detail,
+                    "message_type": "error",
+                    "primary_url": primary_url,
+                    "primary_text": primary_text,
+                    "primary_icon": primary_icon,
+                    "hide_sidebar": True,
+                    "csrf_token": ensure_csrf_token(request),
+                },
+                status_code=status_code,
+            ),
         )
 
-    return JSONResponse(
-        status_code=status_code,
-        content={"detail": public_detail},
+    return _attach_request_id_header(
+        request,
+        JSONResponse(
+            status_code=status_code,
+            content={"detail": public_detail},
+        ),
     )
+
+
+def _attach_request_id_header(request: Request, response: Response) -> Response:
+    request_id = getattr(request.state, "request_id", None)
+    if not request_id:
+        return response
+
+    header_name = request.app.state.settings.REQUEST_ID_HEADER
+    response.headers[header_name] = request_id
+    return response
+
+
+def _request_id_from_request(request: Request) -> str | None:
+    return getattr(request.state, "request_id", None)
 
 
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException) -> Response:
         internal_detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
-        logger.info("HTTP %s: %s", exc.status_code, internal_detail)
+        logger.info(
+            "HTTP %s: %s",
+            exc.status_code,
+            internal_detail,
+            extra={
+                "event": "http_exception_handled",
+                "request_id": _request_id_from_request(request),
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": exc.status_code,
+            },
+        )
 
         headers = exc.headers or {}
         redirect_location = None
@@ -94,10 +125,13 @@ def register_exception_handlers(app: FastAPI) -> None:
                 for header_name, header_value in headers.items()
                 if header_name.lower() != "location"
             }
-            return RedirectResponse(
-                url=redirect_location,
-                status_code=exc.status_code,
-                headers=redirect_headers,
+            return _attach_request_id_header(
+                request,
+                RedirectResponse(
+                    url=redirect_location,
+                    status_code=exc.status_code,
+                    headers=redirect_headers,
+                ),
             )
 
         public_detail = get_public_error_message(exc.status_code, exc.detail)
@@ -107,7 +141,17 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(request: Request, exc: Exception) -> Response:
-        logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+        logger.exception(
+            "Unhandled error on %s %s",
+            request.method,
+            request.url.path,
+            extra={
+                "event": "unhandled_exception",
+                "request_id": _request_id_from_request(request),
+                "method": request.method,
+                "path": request.url.path,
+            },
+        )
 
         public_detail = "Что-то пошло не так. Попробуйте ещё раз позже."
         return _render_error_response(
