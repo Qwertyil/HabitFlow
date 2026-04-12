@@ -3,9 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 from textwrap import dedent
 
+import logging
 import pytest
 
-from src.config import load_settings
+from src.config import Settings, load_settings
 
 SETTINGS_KEYS = (
     "POSTGRES_HOST",
@@ -23,6 +24,9 @@ SETTINGS_KEYS = (
     "TESTING",
     "API_DOCS_ENABLED",
     "LOG_LEVEL",
+    "LOG_FORMAT",
+    "REQUEST_ID_HEADER",
+    "SQL_LOG_LEVEL",
     "UI_SESSION_SECRET_KEY",
     "GOOGLE_OAUTH_CLIENT_ID",
     "GOOGLE_OAUTH_CLIENT_SECRET",
@@ -111,3 +115,67 @@ def test_load_settings_does_not_switch_dotenv_from_value_inside_env_file(
     settings = load_settings()
 
     assert settings.POSTGRES_PORT == 5432
+
+
+def _base_settings_kwargs() -> dict[str, object]:
+    return {
+        "POSTGRES_HOST": "127.0.0.1",
+        "POSTGRES_PORT": 5432,
+        "POSTGRES_USER": "habitflow",
+        "POSTGRES_PASSWORD": "secret",
+        "POSTGRES_DB": "habitflow",
+        "REDIS_HOST": "127.0.0.1",
+        "REDIS_PORT": 6379,
+        "REDIS_PASSWORD": "redis-secret",
+        "REDIS_DB": 0,
+        "ZENQUOTES_API_URL": "https://example.test/api/quotes",
+        "REFILL_INTERVAL_HOURS": 1,
+        "DEBUG": False,
+        "TESTING": False,
+        "API_DOCS_ENABLED": False,
+        "UI_SESSION_SECRET_KEY": "test-session-secret",
+    }
+
+
+@pytest.mark.parametrize(
+    ("field_name", "value"),
+    [
+        ("LOG_LEVEL", "verbose"),
+        ("SQL_LOG_LEVEL", "chatty"),
+        ("LOG_FORMAT", "pretty"),
+        ("REQUEST_ID_HEADER", "   "),
+    ],
+)
+def test_settings_reject_invalid_logging_values(
+    field_name: str,
+    value: object,
+) -> None:
+    kwargs = _base_settings_kwargs()
+    kwargs[field_name] = value
+
+    with pytest.raises(ValueError):
+        Settings(**kwargs)
+
+
+def test_settings_normalize_logging_configuration_values() -> None:
+    settings = Settings(
+        **_base_settings_kwargs(),
+        LOG_LEVEL=" warning ",
+        LOG_FORMAT=" JSON ",
+        REQUEST_ID_HEADER=" X-Correlation-ID ",
+        SQL_LOG_LEVEL=" error ",
+    )
+
+    assert settings.LOG_LEVEL == "WARNING"
+    assert settings.LOG_FORMAT == "json"
+    assert settings.REQUEST_ID_HEADER == "X-Correlation-ID"
+    assert settings.SQL_LOG_LEVEL == "ERROR"
+
+
+def test_settings_default_log_level_uses_debug_when_log_level_missing() -> None:
+    kwargs = _base_settings_kwargs()
+    kwargs["DEBUG"] = True
+    settings = Settings(**kwargs)
+
+    assert settings.default_log_level_name == "DEBUG"
+    assert settings.logging_level == logging.DEBUG

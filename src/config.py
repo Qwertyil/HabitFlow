@@ -2,13 +2,14 @@ import logging
 import os
 import secrets
 from functools import cached_property
-from typing import Literal
+from typing import ClassVar, Literal
 from urllib.parse import quote
 
-from pydantic import field_validator
+from pydantic import ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_ENV_FILE = ".env"
+_LOG_FORMATS = {"json", "text"}
 
 
 def _quote_url_part(value: str | None) -> str:
@@ -16,6 +17,8 @@ def _quote_url_part(value: str | None) -> str:
 
 
 class Settings(BaseSettings):
+    _VALID_LOG_LEVELS: ClassVar[set[str]] = set(logging.getLevelNamesMapping())
+
     POSTGRES_HOST: str
     POSTGRES_PORT: int
     POSTGRES_USER: str
@@ -51,8 +54,11 @@ class Settings(BaseSettings):
     API_DOCS_ENABLED: bool = False
 
     LOG_LEVEL: str | None = None
+    LOG_FORMAT: Literal["text", "json"] = "text"
+    REQUEST_ID_HEADER: str = "X-Request-ID"
+    SQL_LOG_LEVEL: str = "WARNING"
 
-    @field_validator("LOG_LEVEL", mode="before")
+    @field_validator("LOG_LEVEL", "SQL_LOG_LEVEL", mode="before")
     @classmethod
     def normalize_log_level(cls, value: object) -> str | None:
         if value is None or value == "":
@@ -62,21 +68,51 @@ class Settings(BaseSettings):
             return stripped.upper() if stripped else None
         return str(value).upper()
 
+    @field_validator("LOG_LEVEL", "SQL_LOG_LEVEL")
+    @classmethod
+    def validate_log_level(cls, value: str | None, info: ValidationInfo) -> str | None:
+        if value is None:
+            return None
+        if value not in cls._VALID_LOG_LEVELS:
+            allowed = ", ".join(sorted(cls._VALID_LOG_LEVELS))
+            msg = f"Invalid {info.field_name}={value!r}; allowed: {allowed}"
+            raise ValueError(msg)
+        return value
+
+    @field_validator("LOG_FORMAT", mode="before")
+    @classmethod
+    def normalize_log_format(cls, value: object) -> str:
+        normalized = str(value).strip().lower()
+        if normalized not in _LOG_FORMATS:
+            allowed = ", ".join(sorted(_LOG_FORMATS))
+            msg = f"Invalid LOG_FORMAT={value!r}; allowed: {allowed}"
+            raise ValueError(msg)
+        return normalized
+
+    @field_validator("REQUEST_ID_HEADER", mode="before")
+    @classmethod
+    def validate_request_id_header(cls, value: object) -> str:
+        normalized = str(value).strip()
+        if not normalized:
+            raise ValueError("REQUEST_ID_HEADER must not be empty")
+        return normalized
+
     @property
     def logging_level(self) -> int:
         """Уровень логирования root logger: LOG_LEVEL из env или DEBUG/INFO по флагу DEBUG."""
-        name = (
+        return logging.getLevelNamesMapping()[self.default_log_level_name]
+
+    @property
+    def default_log_level_name(self) -> str:
+        return (
             self.LOG_LEVEL
             if self.LOG_LEVEL is not None
             else ("DEBUG" if self.DEBUG else "INFO")
         )
-        mapping = logging.getLevelNamesMapping()
-        try:
-            return mapping[name]
-        except KeyError as err:
-            allowed = ", ".join(sorted(mapping))
-            msg = f"Invalid LOG_LEVEL={name!r}; allowed: {allowed}"
-            raise ValueError(msg) from err
+
+    @property
+    def sql_logging_level(self) -> int:
+        return logging.getLevelNamesMapping()[self.SQL_LOG_LEVEL]
 
     @property
     def google_oauth_enabled(self) -> bool:
