@@ -305,6 +305,28 @@ make typecheck
 make test
 ```
 
+## Logging
+
+HabitFlow uses stdout-only logging for both the web app and the quote worker. The shared bootstrap supports two one-line formats:
+
+- `LOG_FORMAT=text` for local development and direct terminal runs;
+- `LOG_FORMAT=json` for Docker, hosted environments, and log aggregation pipelines.
+
+Each log event includes a timestamp, level, logger name, component (`web` or `worker`), and stable event name. HTTP requests also carry a request ID:
+
+- the app reads the header named by `REQUEST_ID_HEADER` if the client sends one;
+- otherwise it generates a UUID4;
+- the same header is always returned on the HTTP response;
+- request completion is logged exactly once per request;
+- `/healthz/live` and other successful health checks are logged at `DEBUG` to reduce noise.
+
+`LOG_LEVEL` controls the main application verbosity. If it is unset, the app falls back to `DEBUG` when `DEBUG=True` and `INFO` otherwise. The shipped `.env.example` sets `LOG_LEVEL=WARNING` so the override is visible by default. `SQL_LOG_LEVEL` is separate and only affects the SQLAlchemy engine logger, so SQL visibility does not depend on `DEBUG`. Uvicorn's default access log is disabled in favor of the app-owned request completion log to avoid duplicate per-request records.
+
+Recommended defaults:
+
+- local terminal runs: `LOG_FORMAT=text`; keep the shipped `LOG_LEVEL=WARNING` for quieter logs, or change/remove it if you want a different verbosity;
+- containers and deployments: `LOG_FORMAT=json`, keep `REQUEST_ID_HEADER=X-Request-ID` unless your platform standardizes on another header, and raise or lower `SQL_LOG_LEVEL` independently when you need SQL visibility.
+
 ## Testing Strategy
 
 The test suite is split into three layers:
@@ -355,8 +377,11 @@ Notes:
 - Google OAuth is disabled unless all required `GOOGLE_OAUTH_*` variables are provided;
 - quote refresh scheduling uses `REFILL_INTERVAL_HOURS` from config and runs only in the standalone worker process;
 - `/docs`, `/redoc`, and `/openapi.json` are disabled by default and appear only when `API_DOCS_ENABLED=true`;
-- `LOG_FORMAT` supports `text` and `json`; `REQUEST_ID_HEADER` must be non-empty;
+- all application logs are written to stdout; `LOG_FORMAT` supports `text` and `json`, with `text` as the default;
+- if `LOG_LEVEL` is unset, the app falls back to `DEBUG` when `DEBUG=True` else `INFO`; the shipped `.env.example` overrides that with `LOG_LEVEL=WARNING`;
+- `REQUEST_ID_HEADER` must be non-empty, incoming request IDs are preserved, and the same header is echoed back on responses;
 - `SQL_LOG_LEVEL` is validated independently from `LOG_LEVEL` and controls SQL logging without depending on `DEBUG`;
+- the app emits one request-completion log per HTTP request and disables uvicorn's default access log to avoid duplicates;
 - `APP_HOST`, `UVICORN_RELOAD`, `PROXY_HEADERS`, and forwarded-proxy trust settings are supported by `python -m src.run_app`, but they are runtime/deployment overrides rather than core app settings in `.env.example`;
 - `/healthz/live` and `/healthz/ready` are always available for liveness/readiness checks;
 - `make compose-up` uses `docker-compose.yml` plus `docker-compose.dev.yml`, while `make compose-runtime-up` uses only `docker-compose.yml`;

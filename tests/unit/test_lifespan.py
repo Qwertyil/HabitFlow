@@ -10,7 +10,7 @@ from src.config import Settings
 from src.lifespan import lifespan
 
 
-def _settings() -> Settings:
+def _settings(*, debug: bool = True) -> Settings:
     return Settings(
         POSTGRES_HOST="127.0.0.1",
         POSTGRES_PORT=5432,
@@ -23,7 +23,7 @@ def _settings() -> Settings:
         REDIS_DB=0,
         ZENQUOTES_API_URL="https://example.test/api/quotes",
         REFILL_INTERVAL_HOURS=6,
-        DEBUG=True,
+        DEBUG=debug,
         TESTING=False,
         API_DOCS_ENABLED=False,
         UI_SESSION_SECRET_KEY="test-session-secret",
@@ -114,3 +114,35 @@ async def test_lifespan_bootstraps_only_web_resources(
     assert engine_factory_calls == [(app.state.settings.DATABASE_URL_asyncpg, False)]
     assert engine.dispose_calls == 1
     assert redis_instances[0].close_calls == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("debug", [False, True])
+async def test_lifespan_keeps_sqlalchemy_echo_disabled_regardless_of_debug(
+    monkeypatch: pytest.MonkeyPatch,
+    debug: bool,
+) -> None:
+    app = FastAPI(lifespan=lifespan)
+    app.state.settings = _settings(debug=debug)
+
+    http_client = FakeHttpClient()
+    engine = FakeEngine()
+    engine_factory_calls: list[tuple[str, bool]] = []
+
+    @asynccontextmanager
+    async def fake_http_client_factory() -> AsyncGenerator[FakeHttpClient, None]:
+        async with http_client as client:
+            yield client
+
+    def fake_engine_factory(url: str, *, echo: bool) -> FakeEngine:
+        engine_factory_calls.append((url, echo))
+        return engine
+
+    monkeypatch.setattr("src.lifespan.httpx.AsyncClient", fake_http_client_factory)
+    monkeypatch.setattr("src.lifespan.create_async_engine", fake_engine_factory)
+    monkeypatch.setattr("src.lifespan.RedisAdapter", FakeRedisAdapter)
+
+    async with app.router.lifespan_context(app):
+        pass
+
+    assert engine_factory_calls == [(app.state.settings.DATABASE_URL_asyncpg, False)]

@@ -8,6 +8,7 @@ from src.logging_config import (
     JsonEventFormatter,
     TextEventFormatter,
     configure_logging,
+    reset_request_id,
     set_request_id,
 )
 
@@ -103,13 +104,16 @@ def test_configure_logging_is_reentrant_and_applies_context_filter(
     capsys,
 ) -> None:
     logger = logging.getLogger("habitflow.test.logging")
-    set_request_id("req-456")
+    request_id_token = set_request_id("req-456")
 
-    configure_logging(_settings(LOG_FORMAT="json"), component="worker")
-    configure_logging(_settings(LOG_FORMAT="json"), component="worker")
+    try:
+        configure_logging(_settings(LOG_FORMAT="json"), component="worker")
+        configure_logging(_settings(LOG_FORMAT="json"), component="worker")
 
-    logger.info("Worker started", extra={"event": "worker_started"})
-    output = capsys.readouterr().out.strip().splitlines()
+        logger.info("Worker started", extra={"event": "worker_started"})
+        output = capsys.readouterr().out.strip().splitlines()
+    finally:
+        reset_request_id(request_id_token)
 
     assert len(output) == 1
     payload = json.loads(output[0])
@@ -131,3 +135,12 @@ def test_configure_logging_sets_operational_logger_levels() -> None:
     uvicorn_access_logger = logging.getLogger("uvicorn.access")
     assert uvicorn_access_logger.level == logging.WARNING
     assert uvicorn_access_logger.propagate is False
+
+
+def test_configure_logging_disables_duplicate_uvicorn_access_logs() -> None:
+    configure_logging(_settings(), component="web")
+
+    uvicorn_access_logger = logging.getLogger("uvicorn.access")
+
+    assert len(uvicorn_access_logger.handlers) == 1
+    assert isinstance(uvicorn_access_logger.handlers[0], logging.NullHandler)

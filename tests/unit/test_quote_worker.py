@@ -11,7 +11,7 @@ from src.config import Settings
 from src.quote_worker import run_quote_worker, schedule_quote_refresh_job
 
 
-def _settings(*, interval_hours: int = 6) -> Settings:
+def _settings(*, interval_hours: int = 6, debug: bool = True) -> Settings:
     return Settings(
         POSTGRES_HOST="127.0.0.1",
         POSTGRES_PORT=5432,
@@ -24,7 +24,7 @@ def _settings(*, interval_hours: int = 6) -> Settings:
         REDIS_DB=0,
         ZENQUOTES_API_URL="https://example.test/api/quotes",
         REFILL_INTERVAL_HOURS=interval_hours,
-        DEBUG=True,
+        DEBUG=debug,
         TESTING=False,
         API_DOCS_ENABLED=False,
         UI_SESSION_SECRET_KEY="test-session-secret",
@@ -156,6 +156,37 @@ async def test_run_quote_worker_bootstraps_resources_and_shuts_them_down() -> No
     assert refresh_calls[0]["settings"] is settings
     assert refresh_calls[0]["http_client"] is http_client
     assert "session_maker" in refresh_calls[0]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("debug", [False, True])
+async def test_run_quote_worker_keeps_sqlalchemy_echo_disabled_regardless_of_debug(
+    debug: bool,
+) -> None:
+    settings = _settings(interval_hours=3, debug=debug)
+    scheduler = FakeScheduler()
+    http_client = FakeHttpClient()
+    engine = FakeEngine()
+    stop_event = FakeStopEvent()
+    engine_factory_calls: list[tuple[str, bool]] = []
+
+    def fake_engine_factory(url: str, *, echo: bool) -> FakeEngine:
+        engine_factory_calls.append((url, echo))
+        return engine
+
+    async def fake_refresh_job(**_: object) -> None:
+        return None
+
+    await run_quote_worker(
+        settings=settings,
+        stop_event=stop_event,  # type: ignore[arg-type]
+        scheduler_factory=lambda: scheduler,  # type: ignore[arg-type]
+        http_client_factory=lambda: http_client,
+        engine_factory=fake_engine_factory,  # type: ignore[arg-type]
+        refresh_job=fake_refresh_job,
+    )
+
+    assert engine_factory_calls == [(settings.DATABASE_URL_asyncpg, False)]
 
 
 @pytest.mark.asyncio

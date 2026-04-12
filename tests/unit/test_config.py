@@ -179,3 +179,12 @@ def test_settings_default_log_level_uses_debug_when_log_level_missing() -> None:
 
     assert settings.default_log_level_name == "DEBUG"
     assert settings.logging_level == logging.DEBUG
+
+
+def test_settings_use_documented_logging_defaults() -> None:
+    settings = Settings(**_base_settings_kwargs())
+
+    assert settings.LOG_FORMAT == "text"
+    assert settings.REQUEST_ID_HEADER == "X-Request-ID"
+    assert settings.SQL_LOG_LEVEL == "WARNING"
+    assert settings.default_log_level_name == "INFO"
