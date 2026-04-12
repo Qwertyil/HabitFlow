@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 from types import TracebackType
 
 import httpx
@@ -154,3 +155,52 @@ async def test_run_quote_worker_bootstraps_resources_and_shuts_them_down() -> No
     assert refresh_calls[0]["settings"] is settings
     assert refresh_calls[0]["http_client"] is http_client
     assert "session_maker" in refresh_calls[0]
+
+
+def test_run_quote_worker_main_bootstraps_shared_logging(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run_quote_worker_module = importlib.import_module("src.run_quote_worker")
+    settings = _settings()
+    calls: list[tuple[str, object]] = []
+    runner_arguments: list[Settings | None] = []
+
+    def fake_load_settings() -> Settings:
+        calls.append(("load_settings", None))
+        return settings
+
+    def fake_configure_logging(configured_settings: Settings, component: str) -> None:
+        calls.append(("configure_logging", configured_settings, component))
+
+    async def fake_runner() -> None:
+        return None
+
+    def fake_run_quote_worker(worker_settings: Settings | None = None) -> object:
+        runner_arguments.append(worker_settings)
+        return fake_runner()
+
+    def fake_asyncio_run(coro: object) -> None:
+        calls.append(("asyncio.run", coro))
+        close = getattr(coro, "close", None)
+        if callable(close):
+            close()
+
+    monkeypatch.setattr(run_quote_worker_module, "load_settings", fake_load_settings)
+    monkeypatch.setattr(
+        run_quote_worker_module,
+        "configure_logging",
+        fake_configure_logging,
+    )
+    monkeypatch.setattr(
+        run_quote_worker_module,
+        "run_quote_worker",
+        fake_run_quote_worker,
+    )
+    monkeypatch.setattr(run_quote_worker_module.asyncio, "run", fake_asyncio_run)
+
+    run_quote_worker_module.main()
+
+    assert calls[0] == ("load_settings", None)
+    assert calls[1] == ("configure_logging", settings, "worker")
+    assert calls[2][0] == "asyncio.run"
+    assert runner_arguments == [settings]

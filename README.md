@@ -339,6 +339,9 @@ The default `make test` command runs pytest with coverage and enforces a minimum
 | `REFILL_INTERVAL_HOURS` | quote refresh interval for the standalone quote worker scheduler | `1` |
 | `API_DOCS_ENABLED` | enables `/docs`, `/redoc`, and `/openapi.json` | `False` |
 | `LOG_LEVEL` | explicit logging level override | `WARNING` |
+| `LOG_FORMAT` | log output format (`text` or `json`) | `text` |
+| `REQUEST_ID_HEADER` | request correlation header name | `X-Request-ID` |
+| `SQL_LOG_LEVEL` | SQLAlchemy logger level override | `WARNING` |
 | `DEBUG` | debug mode | `True` |
 
 Notes:
@@ -352,6 +355,9 @@ Notes:
 - Google OAuth is disabled unless all required `GOOGLE_OAUTH_*` variables are provided;
 - quote refresh scheduling uses `REFILL_INTERVAL_HOURS` from config and runs only in the standalone worker process;
 - `/docs`, `/redoc`, and `/openapi.json` are disabled by default and appear only when `API_DOCS_ENABLED=true`;
+- `LOG_FORMAT` supports `text` and `json`; `REQUEST_ID_HEADER` must be non-empty;
+- `SQL_LOG_LEVEL` is validated independently from `LOG_LEVEL` and controls SQL logging without depending on `DEBUG`;
+- `APP_HOST`, `UVICORN_RELOAD`, `PROXY_HEADERS`, and forwarded-proxy trust settings are supported by `python -m src.run_app`, but they are runtime/deployment overrides rather than core app settings in `.env.example`;
 - `/healthz/live` and `/healthz/ready` are always available for liveness/readiness checks;
 - `make compose-up` uses `docker-compose.yml` plus `docker-compose.dev.yml`, while `make compose-runtime-up` uses only `docker-compose.yml`;
 - `Make` is optional because all commands can also be run manually.
