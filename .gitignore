@@ -11,3 +11,4 @@ output/
 poetry.toml
 %SystemDrive%/
 .playwright-mcp/
+.idea/

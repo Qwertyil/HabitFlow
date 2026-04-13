@@ -160,7 +160,7 @@ class Settings(BaseSettings):
             raise ValueError("UI_SESSION_SECRET_KEY must be set when DEBUG=False")
         return secrets.token_urlsafe(32)
 
-    model_config = SettingsConfigDict(env_file=DEFAULT_ENV_FILE, extra="ignore")
+    model_config = SettingsConfigDict(extra="ignore")
 
 
 def load_settings() -> Settings:
