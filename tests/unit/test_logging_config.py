@@ -14,24 +14,29 @@ from src.logging_config import (
 
 
 def _settings(**overrides: object) -> Settings:
-    return Settings(
-        POSTGRES_HOST="127.0.0.1",
-        POSTGRES_PORT=5432,
-        POSTGRES_USER="habitflow",
-        POSTGRES_PASSWORD="secret",
-        POSTGRES_DB="habitflow",
-        REDIS_HOST="127.0.0.1",
-        REDIS_PORT=6379,
-        REDIS_PASSWORD="redis-secret",
-        REDIS_DB=0,
-        ZENQUOTES_API_URL="https://example.test/api/quotes",
-        REFILL_INTERVAL_HOURS=6,
-        DEBUG=False,
-        TESTING=False,
-        API_DOCS_ENABLED=False,
-        UI_SESSION_SECRET_KEY="test-session-secret",
-        **overrides,
-    )
+    values: dict[str, object] = {
+        "POSTGRES_HOST": "127.0.0.1",
+        "POSTGRES_PORT": 5432,
+        "POSTGRES_USER": "habitflow",
+        "POSTGRES_PASSWORD": "secret",
+        "POSTGRES_DB": "habitflow",
+        "REDIS_HOST": "127.0.0.1",
+        "REDIS_PORT": 6379,
+        "REDIS_PASSWORD": "redis-secret",
+        "REDIS_DB": 0,
+        "ZENQUOTES_API_URL": "https://example.test/api/quotes",
+        "REFILL_INTERVAL_HOURS": 6,
+        "DEBUG": False,
+        "TESTING": False,
+        "API_DOCS_ENABLED": False,
+        "LOG_LEVEL": None,
+        "LOG_FORMAT": "text",
+        "REQUEST_ID_HEADER": "X-Request-ID",
+        "SQL_LOG_LEVEL": "WARNING",
+        "UI_SESSION_SECRET_KEY": "test-session-secret",
+    }
+    values.update(overrides)
+    return Settings(**values)
 
 
 def _record() -> logging.LogRecord:
