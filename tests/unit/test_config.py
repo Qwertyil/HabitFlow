@@ -65,6 +65,11 @@ def _clear_settings_env(monkeypatch) -> None:  # noqa: ANN001
     monkeypatch.delenv("ENV_FILE", raising=False)
 
 
+@pytest.fixture(autouse=True)
+def clear_settings_env_for_test(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clear_settings_env(monkeypatch)
+
+
 def test_load_settings_uses_env_file_from_environment_variable(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
