@@ -5,492 +5,205 @@
 [![codecov](https://codecov.io/gh/Qwertyil/HabitFlow/branch/master/graph/badge.svg)](https://codecov.io/gh/Qwertyil/HabitFlow)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.135-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)](https://redis.io/)
-[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.x-D71F00?logo=sqlalchemy&logoColor=white)](https://www.sqlalchemy.org/)
-[![Poetry](https://img.shields.io/badge/Poetry-2.x-60A5FA?logo=poetry&logoColor=white)](https://python-poetry.org/)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![Pytest](https://img.shields.io/badge/Pytest-tested-0A9EDC?logo=pytest&logoColor=white)](https://pytest.org/)
 
-HabitFlow is a web-first habit and task tracker that explores backend concerns beyond basic CRUD: recurring schedule logic, auth/session boundaries, owner-scoped data access, and reporting shaped by real product constraints.
+**A production-minded habit and task tracker built to showcase backend engineering, date-sensitive domain modeling, application security, and pragmatic system design.**
 
-## Live Demo
+HabitFlow is a web-first FastAPI application for organizing themes, tasks, and recurring habits. The browser experience is intentionally simple; the engineering focus is on the parts that become difficult in a real product: recurrence rules, streaks, user-data isolation, session lifecycle, reporting, and reliable delivery.
 
-- https://www.amir-vps.ru
+> [!IMPORTANT]
+> **Live demo: currently disabled.** The hosted instance is offline, but the complete application can be run locally with Docker Compose using the quick start below.
 
-The goal of this repository is to show how a small productivity app quickly becomes an engineering problem:
+<p align="center">
+  <img src="assets/main_page.png" alt="HabitFlow dashboard with tasks and habits due today" width="900">
+</p>
 
-- recurring habits are not just `daily yes/no`, but support daily, weekly, monthly, yearly, and interval-based schedules with streaks, due-today logic, and auto-archiving;
-- browser UX and backend concerns meet in the same app: server-rendered pages, JSON-friendly endpoints, cookie auth, CSRF protection, safe redirects, OAuth, and rate-limited auth flows;
-- the code reflects trade-offs that usually appear in production-style apps, not only in demos.
+## What This Project Demonstrates
 
-## Why This Repo Is Non-Trivial
+| Area | Implementation |
+|---|---|
+| Domain modeling | Daily, weekday, monthly, yearly, and interval-based habit schedules with start/end windows, due-today logic, completion history, streaks, and automatic expiry |
+| Secure ownership | Owner-scoped repositories prevent one user from reading or mutating another user's themes, tasks, habits, or statistics |
+| Authentication | Argon2 password hashing, opaque Redis-backed sessions, logout/invalidation, and optional Google OAuth |
+| Browser security | CSRF validation, safe redirect normalization, auth rate limits, cookie controls, CSP, and other security headers |
+| Architecture | Explicit `routers -> services -> repositories` boundaries around PostgreSQL and Redis |
+| Reliability | Alembic migrations, health/readiness checks, structured logs, request IDs, Docker packaging, and a standalone scheduled worker |
+| Verification | Unit, API-unit, and integration tests with an enforced 80% coverage floor, plus Ruff, strict mypy, migration checks, CodeQL, dependency auditing, container scanning, and Docker smoke tests in CI |
 
-- **Product logic is stateful and date-sensitive.**
-  Habits have schedule rules, start/end windows, completion history, streaks, and "due today" behavior. That creates real edge cases around interval cycles, expired habits, and period-based statistics.
-- **Security is treated like part of the product, not an afterthought.**
-  The app separates UI session state from auth session state, stores auth sessions in Redis as opaque identifiers, enforces CSRF on state-changing requests, normalizes redirect targets, and rate-limits auth endpoints.
-- **The transport layer handles real browser behavior.**
-  The same backend supports HTML pages, redirects, and JSON responses, with centralized error handling and different unauthorized behavior for browser and API-like requests.
-- **The project keeps a production-like shape without becoming overcomplicated.**
-  PostgreSQL handles relational data and reporting queries, Redis handles sessions, Alembic manages schema evolution, and automated tests cover business logic, router behavior, and integration boundaries.
+## Product Capabilities
 
-## Product Value
-
-The value of HabitFlow is less in the feature list and more in the parts that are easy to get wrong in productivity products: deciding what is due, what counts as completed, how recurring routines behave over time, and how to keep personal data isolated and secure while still giving the user a simple browser experience.
-
-For a hiring manager, the useful signal is less "there is a FastAPI app here" and more:
-
-- ambiguous product behavior translated into explicit backend rules;
-- pragmatic infrastructure choices instead of unnecessary complexity;
-- attention to auth, ownership, and browser security details that often break late;
-- tests used to verify those decisions instead of leaving them at the level of intent.
-
-## Engineering Trade-Offs
-
-- **Redis-backed opaque sessions instead of JWTs.**
-  Simpler logout and session invalidation, better control over server-side auth state, at the cost of Redis as an operational dependency.
-- **Separate UI session and auth session.**
-  Keeps CSRF tokens and temporary browser state away from authentication state, which makes the security model clearer and easier to evolve.
-- **APScheduler instead of a queue stack.**
-  Good enough for lightweight recurring quote refresh jobs in a dedicated worker without introducing Celery or a broker stack.
-- **Server-rendered web UI with backend-owned flows.**
-  Less frontend complexity, faster iteration on auth and CRUD behavior, and more room to focus the project on backend decisions than a frontend-heavy architecture would provide here.
-- **Layered architecture over "FastAPI everything in routers".**
-  Slightly more boilerplate, but clearer boundaries for testing, refactoring, and explaining where business rules live.
-
-## Backend Highlights
-
-- Layered architecture: `routers -> services -> repositories -> models/schemas`
-- Async FastAPI + SQLAlchemy 2.x + PostgreSQL
-- Cookie-based auth with Redis-backed session storage
-- Separate UI session middleware and auth session cookie handling
-- CSRF protection for state-changing requests
-- Owner-scoped access to user data across themes, tasks, habits, and stats
-- Habit scheduling engine with multiple recurrence types
-- Aggregated statistics page with period-based calculations
-- Google OAuth login flow
-- Dedicated quote refresh worker with immediate sync and scheduled intervals
-- Unit, API-unit, and integration tests
-- Strict static checks with Ruff and mypy
-
-## Engineering Problems Solved
-
-### Authentication and Sessions
-
-- Implemented registration, login, logout, and session resolution.
-- Stored auth sessions in Redis instead of in-memory state or self-contained cookies.
-- Added optional Google OAuth flow with temporary state stored in UI session.
-- Separated UI session middleware from auth session cookie handling.
-
-### Data Ownership and Security
-
-- Applied owner-scoped data access so users only work with their own records.
-- Added CSRF protection for state-changing operations.
-- Added safe redirect normalization for browser auth flows.
-- Added rate limiting for auth-related routes.
-- Centralized error handling for HTML and JSON responses.
-
-### Domain Logic
-
-- Implemented task priorities and status transitions.
-- Built habit scheduling for daily, weekly, monthly, yearly, and interval-based routines.
-- Added completion tracking, streak logic, date-aware filtering, and auto-archiving for expired habits.
-- Calculated aggregated statistics across tasks, habits, and themes.
-
-### Reliability and Maintainability
-
-- Added Alembic migrations for schema evolution.
-- Structured code into clear service and repository boundaries.
-- Covered behavior with unit, API-unit, and integration tests.
-- Enforced quality gates with Ruff, mypy, and pytest coverage.
-
-## Key Engineering Decisions
-
-- **FastAPI** for explicit request handling, dependency injection, and async support.
-- **PostgreSQL** as the primary relational store for application data and reporting queries.
-- **Redis** for session-backed authentication state and invalidation.
-- **APScheduler** inside a standalone worker for lightweight recurring background jobs without adding a queue broker.
-- **Layered architecture** to keep transport, business logic, and persistence concerns separated.
+- Group work into themes and track related task and habit counts.
+- Create tasks with priorities and explicit completion state.
+- Schedule habits daily, on selected weekdays, monthly, yearly, or on custom interval cycles.
+- Track completions, current streaks, period progress, habits due today, and expired habits.
+- Explore aggregated task, habit, and theme statistics over selectable periods.
+- Register and sign in with email/password or optional Google OAuth.
+- Use a responsive server-rendered interface with light/dark themes and targeted fetch-based updates.
+- Refresh motivational quotes in a dedicated APScheduler worker rather than the web process.
 
 ## Architecture
 
 ```text
 Browser
-  -> FastAPI routers
-     -> services
-        -> repositories
-           -> PostgreSQL
-           -> Redis
+  -> FastAPI application
+     -> middleware (request context, sessions, security headers)
+     -> routers (HTML, redirects, targeted JSON responses)
+        -> services (business rules and use-case orchestration)
+           -> repositories
+              -> PostgreSQL (application data and reporting)
+              -> Redis (authentication sessions)
 
 Quote worker
   -> APScheduler
-     -> services
+     -> quote service
         -> ZenQuotes API
         -> PostgreSQL
 ```
 
-### Request Flow
+The request path is deliberately explicit: routers own HTTP concerns, services own product rules, and repositories own persistence. That separation keeps date-sensitive behavior and authorization boundaries testable without coupling them to FastAPI handlers.
 
-1. Router validates HTTP input and resolves dependencies.
-2. Service applies business rules and coordinates use cases.
-3. Repository reads or writes PostgreSQL or Redis.
-4. Router returns HTML, redirect, or JSON depending on the route.
+### Deliberate Trade-offs
 
-### Project Structure
+| Decision | Why it fits this project | Cost accepted |
+|---|---|---|
+| Redis-backed opaque sessions instead of JWTs | Immediate logout and server-side invalidation with a small, inspectable auth model | Redis becomes a runtime dependency |
+| Server-rendered Jinja2 UI instead of a SPA | Keeps the portfolio focus on backend behavior while still exercising real browser flows | Less client-side interactivity than a dedicated frontend |
+| APScheduler worker instead of a queue stack | Isolates lightweight recurring quote refreshes without introducing Celery and a broker | Not intended for high-volume distributed jobs |
+| Layered services and repositories | Makes business rules, ownership checks, and persistence independently testable | More structure than a small CRUD prototype needs |
 
-```text
-.
-├── src/
-│   ├── routers/        # HTTP and web routes
-│   ├── services/       # business logic
-│   ├── repositories/   # database and Redis access
-│   ├── database/       # SQLAlchemy models and Alembic migrations
-│   ├── schemas/        # Pydantic contracts
-│   ├── templates/      # Jinja2 templates
-│   └── static/         # CSS and JavaScript
-├── tests/              # unit, api_unit, integration
-├── docs/               # internal contracts and architecture notes
-├── Dockerfile
-├── docker-compose.yml
-├── Makefile
-├── pyproject.toml
-└── .env.example
-```
+## Where to Start in the Code
 
-## Product Scope
+| Topic | Code | Tests / notes |
+|---|---|---|
+| Recurring-habit rules and statistics | [`src/services/habits.py`](src/services/habits.py) | [`tests/unit/test_habit_service.py`](tests/unit/test_habit_service.py), [`tests/integration/test_habits.py`](tests/integration/test_habits.py) |
+| Owner-scoped persistence | [`src/repositories/owned_base.py`](src/repositories/owned_base.py) | Integration coverage across themes, tasks, habits, and statistics |
+| Authentication and sessions | [`src/services/auth/`](src/services/auth/), [`src/repositories/session_store.py`](src/repositories/session_store.py) | [`docs/session_contract.mdc`](docs/session_contract.mdc) |
+| Application lifecycle and middleware | [`src/application.py`](src/application.py), [`src/lifespan.py`](src/lifespan.py), [`src/middleware/`](src/middleware/) | Health, request-context, security-header, and lifecycle tests |
+| Delivery pipeline | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Lint, coverage, migrations, image build, security scans, and a running-container smoke test |
 
-- Themes with related entity counters
-- Tasks with priorities `low`, `medium`, `high`
-- Habits with multiple recurrence modes: daily, weekly, monthly, yearly, and interval-based
-- Shared light/dark UI themes with a compact navbar switcher
-- Registration, login, logout, and optional Google OAuth
-- Server-rendered web UI with FastAPI + Jinja2
+## Technology
 
-## Tech Stack
+- **Backend:** Python 3.12, FastAPI, Pydantic, SQLAlchemy 2.x, Alembic
+- **Data:** PostgreSQL 17, Redis 7
+- **Web:** Jinja2, semantic CSS, vanilla JavaScript
+- **Background work:** APScheduler, HTTPX, standalone worker process
+- **Quality:** pytest, pytest-cov, Ruff, mypy, pre-commit, CodeQL
+- **Delivery:** Docker, Docker Compose, GitHub Actions
 
-- Python 3.12
-- FastAPI
-- SQLAlchemy 2.x
-- Alembic
-- PostgreSQL
-- Redis
-- Jinja2
-- Vanilla JavaScript
-- Poetry
-- pytest
-- Ruff
-- mypy
-- Docker
-- Docker Compose
+## Run Locally
 
-## Run
+### Docker Compose Quick Start
 
-### Option 1. Docker Compose Dev Stack
+Prerequisites: Git, Docker, and Docker Compose.
 
 ```bash
 git clone https://github.com/Qwertyil/HabitFlow.git
 cd HabitFlow
 cp .env.example .env
 cp .env.docker.example .env.docker
-```
-
-Then run the local development stack:
-
-```bash
 make compose-up
 make migration
 ```
 
-This starts:
+Open [http://localhost:8001](http://localhost:8001). The development stack starts the web application, quote worker, PostgreSQL, and Redis.
 
-- the web app on `http://localhost:8001`;
-- the quote worker alongside it;
-- PostgreSQL on `localhost:5430`;
-- Redis on `localhost:6370`.
-
-To run the same dev stack with another profile, point `ENV_FILE` at a different base dotenv file:
+Stop it with:
 
 ```bash
-cp .env.example .env.prod
-ENV_FILE=.env.prod make compose-up
-ENV_FILE=.env.prod make migration
+make compose-down
 ```
 
-### Option 1b. Runtime Compose Baseline
+### Native Python Development
 
-Use the runtime-only stack when you want the deploy-like Compose file without dev bind mounts or published Postgres/Redis ports:
-
-```bash
-make compose-runtime-up
-```
-
-The runtime baseline publishes only the web app HTTP port and starts both `app` and `quote-worker`.
-
-### Option 2. Local Development
-
-Create `.env` from the example file:
+Use Docker for PostgreSQL and Redis while running the Python processes locally:
 
 ```bash
 cp .env.example .env
-```
-
-If you want multiple local profiles, create files such as `.env.dev` or `.env.test` and
-run `make` with `ENV_FILE=.env.dev` or `ENV_FILE=.env.test`.
-
-Install dependencies:
-
-```bash
 poetry install
-```
-
-Start infrastructure only:
-
-```bash
 make infra-up
-```
-
-Apply migrations:
-
-```bash
 poetry run alembic upgrade head
-```
-
-Run the web app in one terminal:
-
-```bash
 make run
 ```
 
-Run the quote worker in a second terminal:
+Run the quote worker in a second terminal when you want scheduled quote refreshes:
 
 ```bash
 make worker-run
 ```
 
-Local URL: `http://localhost:8001`
+Google OAuth is optional. To enable it locally, provide the `GOOGLE_OAUTH_*` values in `.env` and keep the callback URL set to `http://localhost:8001/auth/google/callback`.
 
-If you use Google OAuth locally, update `GOOGLE_OAUTH_REDIRECT_URI` in `.env` to:
+## Quality Checks
+
+```bash
+make lint
+make typecheck
+make test
+```
+
+The suite is split into three layers:
+
+- `tests/unit` covers isolated business and infrastructure logic.
+- `tests/api_unit` covers route contracts and browser response behavior.
+- `tests/integration` exercises the application against disposable PostgreSQL and Redis containers.
+
+Docker is required for the integration layer. `make test` measures branch coverage and fails below 80%.
+
+## Project Structure
 
 ```text
-http://localhost:8001/auth/google/callback
+.
+├── src/
+│   ├── routers/          # HTTP and browser-facing routes
+│   ├── services/         # domain logic and use cases
+│   ├── repositories/     # PostgreSQL and Redis access
+│   ├── database/         # SQLAlchemy models and Alembic migrations
+│   ├── schemas/          # Pydantic input/output contracts
+│   ├── middleware/       # request context and security headers
+│   ├── templates/        # Jinja2 views
+│   └── static/           # CSS and JavaScript
+├── tests/
+│   ├── unit/
+│   ├── api_unit/
+│   └── integration/
+├── docs/                 # architecture and HTTP/session contracts
+├── scripts/              # README screenshot tooling
+├── docker-compose.yml
+├── docker-compose.dev.yml
+├── Dockerfile
+└── Makefile
 ```
 
-## Verify
+## Screenshots
 
-Useful pages:
-
-- `/`
-- `/stats` (statistics dashboard v2)
-- `/themes`
-- `/tasks`
-- `/habits`
-- `/auth/login`
-- `/auth/register`
-- `/healthz/live`
-- `/healthz/ready`
-- `/docs` when `API_DOCS_ENABLED=true`
-
-Run tests:
-
-```bash
-make test
-```
-
-Run the main quality checks:
-
-```bash
-make lint
-make typecheck
-make test
-```
-
-## Logging
-
-HabitFlow uses stdout-only logging for both the web app and the quote worker. The shared bootstrap supports two one-line formats:
-
-- `LOG_FORMAT=text` for local development and direct terminal runs;
-- `LOG_FORMAT=json` for Docker, hosted environments, and log aggregation pipelines.
-
-Each log event includes a timestamp, level, logger name, component (`web` or `worker`), and stable event name. HTTP requests also carry a request ID:
-
-- the app reads the header named by `REQUEST_ID_HEADER` if the client sends one;
-- otherwise it generates a UUID4;
-- the same header is always returned on the HTTP response;
-- request completion is logged exactly once per request;
-- `/healthz/live` and other successful health checks are logged at `DEBUG` to reduce noise.
-
-`LOG_LEVEL` controls the main application verbosity. If it is unset, the app falls back to `DEBUG` when `DEBUG=True` and `INFO` otherwise. The shipped `.env.example` sets `LOG_LEVEL=WARNING` so the override is visible by default. `SQL_LOG_LEVEL` is separate and only affects the SQLAlchemy engine logger, so SQL visibility does not depend on `DEBUG`. Uvicorn's default access log is disabled in favor of the app-owned request completion log to avoid duplicate per-request records.
-
-Recommended defaults:
-
-- local terminal runs: `LOG_FORMAT=text`; keep the shipped `LOG_LEVEL=WARNING` for quieter logs, or change/remove it if you want a different verbosity;
-- containers and deployments: `LOG_FORMAT=json`, keep `REQUEST_ID_HEADER=X-Request-ID` unless your platform standardizes on another header, and raise or lower `SQL_LOG_LEVEL` independently when you need SQL visibility.
-
-## Testing Strategy
-
-The test suite is split into three layers:
-
-- `tests/unit` for isolated business logic;
-- `tests/api_unit` for route and HTTP behavior;
-- `tests/integration` for end-to-end behavior with real infrastructure.
-
-The default `make test` command runs pytest with coverage and enforces a minimum coverage threshold of `80%`.
-
-## Main Environment Variables
-
-| Variable | Purpose | Example value |
-|---|---|---|
-| `POSTGRES_DB` | PostgreSQL database name | `mydatabase` |
-| `POSTGRES_USER` | PostgreSQL user | `myuser` |
-| `POSTGRES_PASSWORD` | PostgreSQL password | `mypassword` |
-| `POSTGRES_HOST` | PostgreSQL host | `localhost` |
-| `POSTGRES_PORT` | PostgreSQL host port | `5430` |
-| `REDIS_HOST` | Redis host | `localhost` |
-| `REDIS_PORT` | Redis host port | `6370` |
-| `REDIS_PASSWORD` | Redis password | `your_redis_password_here` |
-| `REDIS_DB` | Redis DB index | `0` |
-| `CONTAINER_APP_PORT` | internal app port inside Docker container | `8000` |
-| `APP_PORT` | local app port | `8001` |
-| `UI_SESSION_SECRET_KEY` | UI session middleware secret | `change_me_to_a_long_random_string` |
-| `AUTH_SESSION_COOKIE_NAME` | auth cookie name | `auth_session` |
-| `GOOGLE_OAUTH_CLIENT_ID` | Google OAuth client id | empty |
-| `GOOGLE_OAUTH_CLIENT_SECRET` | Google OAuth client secret | empty |
-| `GOOGLE_OAUTH_REDIRECT_URI` | Google OAuth callback URL | `http://localhost:8001/auth/google/callback` |
-| `ZENQUOTES_API_URL` | quotes provider URL | `https://zenquotes.io/api/quotes` |
-| `REFILL_INTERVAL_HOURS` | quote refresh interval for the standalone quote worker scheduler | `1` |
-| `API_DOCS_ENABLED` | enables `/docs`, `/redoc`, and `/openapi.json` | `False` |
-| `LOG_LEVEL` | explicit logging level override | `WARNING` |
-| `LOG_FORMAT` | log output format (`text` or `json`) | `text` |
-| `REQUEST_ID_HEADER` | request correlation header name | `X-Request-ID` |
-| `SQL_LOG_LEVEL` | SQLAlchemy logger level override | `WARNING` |
-| `DEBUG` | debug mode | `True` |
-
-Notes:
-
-- the table reflects the values shipped in `.env.example`; some settings are still required by code if you remove them from the file;
-- `ENV_FILE` is chosen outside the dotenv file, for example `ENV_FILE=.env.test make test`;
-- `make` uses `python-dotenv` for app/test commands and passes the same `ENV_FILE` to Docker Compose so the selected profile stays in sync;
-- `.env.docker` overrides `POSTGRES_HOST`, `POSTGRES_PORT`, `REDIS_HOST`, and `REDIS_PORT` for Dockerized app and worker containers;
-- `APP_PORT` is the host-side published port, while `CONTAINER_APP_PORT` is the internal port the container listens on;
-- if `DEBUG=False`, `UI_SESSION_SECRET_KEY` must be set explicitly;
-- Google OAuth is disabled unless all required `GOOGLE_OAUTH_*` variables are provided;
-- quote refresh scheduling uses `REFILL_INTERVAL_HOURS` from config and runs only in the standalone worker process;
-- `/docs`, `/redoc`, and `/openapi.json` are disabled by default and appear only when `API_DOCS_ENABLED=true`;
-- all application logs are written to stdout; `LOG_FORMAT` supports `text` and `json`, with `text` as the default;
-- if `LOG_LEVEL` is unset, the app falls back to `DEBUG` when `DEBUG=True` else `INFO`; the shipped `.env.example` overrides that with `LOG_LEVEL=WARNING`;
-- `REQUEST_ID_HEADER` must be non-empty, incoming request IDs are preserved, and the same header is echoed back on responses;
-- `SQL_LOG_LEVEL` is validated independently from `LOG_LEVEL` and controls SQL logging without depending on `DEBUG`;
-- the app emits one request-completion log per HTTP request and disables uvicorn's default access log to avoid duplicates;
-- `APP_HOST`, `UVICORN_RELOAD`, `PROXY_HEADERS`, and forwarded-proxy trust settings are supported by `python -m src.run_app`, but they are runtime/deployment overrides rather than core app settings in `.env.example`;
-- `/healthz/live` and `/healthz/ready` are always available for liveness/readiness checks;
-- `make compose-up` uses `docker-compose.yml` plus `docker-compose.dev.yml`, while `make compose-runtime-up` uses only `docker-compose.yml`;
-- `Make` is optional because all commands can also be run manually.
-
-## Make Commands
-
-```bash
-make run
-make worker-run
-make test
-make lint
-make format
-make typecheck
-make pre-commit
-make check
-make infra-up
-make infra-down
-make infra-restart
-make infra-logs
-make compose-up
-make compose-down
-make compose-logs
-make compose-runtime-up
-make compose-runtime-down
-make compose-runtime-logs
-make migration
-make psql
-```
-
-## Screenshots (LEGACY)
-
-Screenshots are captured with demo data (themes, tasks, habits, partial task completions) using `scripts/capture_readme_screenshots.py` so lists and the statistics dashboard look like a real account. **They always reflect whatever app is running at `SCREENSHOT_BASE_URL`.** After changing `src/templates/` or `src/static/`, either rebuild and restart the Docker app (`docker compose build app && docker compose up -d app`) or point `SCREENSHOT_BASE_URL` at local `make run` (default in the script is `http://127.0.0.1:8001`) so PNGs are not stuck on an old image. If `auth/register` is rate-limited, set `SCREENSHOT_EMAIL` / `SCREENSHOT_PASSWORD` for an existing user or retry after a short wait.
-
-<div align="center">
-  <img src="assets/stats_page.png"
-       alt="HabitFlow statistics dashboard (Statistics v2)"
-       width="800"
-       loading="lazy"
-       style="border-radius: 12px;
-              box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-              border: 1px solid #eaeef2;">
-  <p><em>Statistics dashboard (v2)</em></p>
-</div>
+<p align="center">
+  <img src="assets/stats_page.png" alt="HabitFlow statistics dashboard" width="900">
+</p>
 
 <details>
-  <summary>More UI screenshots</summary>
+  <summary>View task, habit, and theme screens</summary>
 
-  <div align="center">
-    <img src="assets/main_page.png"
-         alt="HabitFlow main dashboard"
-         width="800"
-         loading="lazy"
-         style="border-radius: 12px;
-                box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-                border: 1px solid #eaeef2;">
-    <p><em>Main dashboard</em></p>
-  </div>
+  <p align="center">
+    <img src="assets/tasks_list.png" alt="HabitFlow task list" width="800">
+  </p>
 
-  <div align="center">
-    <img src="assets/tasks_list.png"
-         alt="Tasks list"
-         width="800"
-         loading="lazy"
-         style="border-radius: 12px;
-                box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-                border: 1px solid #eaeef2;">
-    <p><em>Tasks list</em></p>
-  </div>
+  <p align="center">
+    <img src="assets/habits_list.png" alt="HabitFlow habit list" width="800">
+  </p>
 
-  <div align="center">
-    <img src="assets/habits_list.png"
-         alt="Habits list"
-         width="800"
-         loading="lazy"
-         style="border-radius: 12px;
-                box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-                border: 1px solid #eaeef2;">
-    <p><em>Habits list</em></p>
-  </div>
-
-  <div align="center">
-    <img src="assets/themes_list.png"
-         alt="Themes list"
-         width="800"
-         loading="lazy"
-         style="border-radius: 12px;
-                box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-                border: 1px solid #eaeef2;">
-    <p><em>Themes list</em></p>
-  </div>
+  <p align="center">
+    <img src="assets/themes_list.png" alt="HabitFlow theme list" width="800">
+  </p>
 </details>
+
+The screenshots use generated demo data. They can be refreshed with [`scripts/capture_readme_screenshots.py`](scripts/capture_readme_screenshots.py) against a running local instance.
 
 ## Documentation
 
-Internal docs live under `docs/`:
+- [`docs/overview.mdc`](docs/overview.mdc) — product scope and architectural principles
+- [`docs/api_contract.mdc`](docs/api_contract.mdc) — routes, payloads, responses, auth, and CSRF behavior
+- [`docs/session_contract.mdc`](docs/session_contract.mdc) — UI session and Redis-backed auth session lifecycle
 
-- [`docs/overview.mdc`](docs/overview.mdc) — product scope, architecture principles, and how documentation is organized
-- [`docs/api_contract.mdc`](docs/api_contract.mdc) — HTTP contract for registered routes (methods, paths, payloads, status codes, auth/CSRF)
-- [`docs/session_contract.mdc`](docs/session_contract.mdc) — UI session middleware vs Redis-backed auth sessions, cookies, and OAuth state
+## Current Scope
 
-Start with `overview.mdc`, then open the contract that matches the change you are making.
-
-## Next Steps
-
-1. Perform UI and e2e testing.
-2. Add language switching.
-3. Add quote translation based on the selected language.
-
-## Current Status
-
-HabitFlow is a backend portfolio project with a working web UI, authentication, ownership boundaries, recurring habit logic, statistics, automated tests, and containerized local setup.
+HabitFlow is a backend-focused portfolio project with a complete browser UI. It intentionally does not include a separate public REST API, multi-user collaboration, an admin panel, or a mobile client. Those boundaries keep the implementation focused on domain correctness, security, and maintainability rather than feature count.
