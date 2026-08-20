@@ -7,9 +7,9 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.135-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
-**A production-minded habit and task tracker built to showcase backend engineering, date-sensitive domain modeling, application security, and pragmatic system design.**
+**A web-first habit and task tracker with flexible recurring schedules, progress reporting, and secure user-scoped data.**
 
-HabitFlow is a web-first FastAPI application for organizing themes, tasks, and recurring habits. The browser experience is intentionally simple; the engineering focus is on the parts that become difficult in a real product: recurrence rules, streaks, user-data isolation, session lifecycle, reporting, and reliable delivery.
+HabitFlow helps users organize themes, tasks, and recurring habits in one FastAPI application. It combines a server-rendered browser interface with date-aware scheduling, streak tracking, authentication, statistics, and containerized local development.
 
 > [!IMPORTANT]
 > **Live demo: currently disabled.** The hosted instance is offline, but the complete application can be run locally with Docker Compose using the quick start below.
@@ -18,7 +18,7 @@ HabitFlow is a web-first FastAPI application for organizing themes, tasks, and r
   <img src="assets/main_page.png" alt="HabitFlow dashboard with tasks and habits due today" width="900">
 </p>
 
-## What This Project Demonstrates
+## Engineering Highlights
 
 | Area | Implementation |
 |---|---|
@@ -67,7 +67,7 @@ The request path is deliberately explicit: routers own HTTP concerns, services o
 | Decision | Why it fits this project | Cost accepted |
 |---|---|---|
 | Redis-backed opaque sessions instead of JWTs | Immediate logout and server-side invalidation with a small, inspectable auth model | Redis becomes a runtime dependency |
-| Server-rendered Jinja2 UI instead of a SPA | Keeps the portfolio focus on backend behavior while still exercising real browser flows | Less client-side interactivity than a dedicated frontend |
+| Server-rendered Jinja2 UI instead of a SPA | Keeps browser flows cohesive and avoids a separate frontend deployment | Less client-side interactivity than a dedicated frontend |
 | APScheduler worker instead of a queue stack | Isolates lightweight recurring quote refreshes without introducing Celery and a broker | Not intended for high-volume distributed jobs |
 | Layered services and repositories | Makes business rules, ownership checks, and persistence independently testable | More structure than a small CRUD prototype needs |
 
@@ -206,4 +206,4 @@ The screenshots use generated demo data. They can be refreshed with [`scripts/ca
 
 ## Current Scope
 
-HabitFlow is a backend-focused portfolio project with a complete browser UI. It intentionally does not include a separate public REST API, multi-user collaboration, an admin panel, or a mobile client. Those boundaries keep the implementation focused on domain correctness, security, and maintainability rather than feature count.
+HabitFlow currently focuses on personal productivity through its browser interface. A separate public REST API, multi-user collaboration, an admin panel, and mobile clients are outside the current scope. These boundaries keep the application centered on recurring-habit logic, security, and maintainability.
