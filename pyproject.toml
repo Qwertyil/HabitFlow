@@ -73,7 +73,7 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-# Какие правила включить (как в FastAPI [citation:6])
+# Какие правила включить
 select = [
     "E",   # pycodestyle ошибки
     "W",   # pycodestyle предупреждения
@@ -109,7 +109,7 @@ ignore = [
 [tool.ruff.lint.isort]
 # Настройка сортировки импортов
 combine-as-imports = true
-known-first-party = ["src"]  # ваши локальные модули
+known-first-party = ["src"]  # локальные модули
 
 [tool.ruff.format]
 # Настройки форматирования
